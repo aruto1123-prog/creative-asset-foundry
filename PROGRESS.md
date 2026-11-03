@@ -41,12 +41,12 @@
 ## Phase 3：極限絵柄開発・モデル調合＆LoRA研究ラボ（`core/style_alchemy/`）
 - [x] 共有スキーマ `schemas.py`（アーキテクチャ別ブロック定義・StyleRecipe）
 - [x] ComfyUIグラフ基盤 `comfy_export.py`（モデルスタック・txt2img）
-- [ ] 選好学習 `preference_engine.py`（Elo・Bradley-Terry MM・リッジ/ロジスティック・重要度・CI・能動学習ペア）
-- [ ] 最適化 `model_optimizer.py`（パラメータ空間・GP・EI/UCB/PI・CMA-ES・GA・提案・エクスポーター）
-- [ ] データセット精製 `dataset_curator.py`（クレンジング・共起/NPMI/エントロピー・癒着検出・ギャップ分析・LLM連携）
-- [ ] グリッド実験 `grid_laboratory.py`（トークン辞書・XYZバッチ・分析）
-- [ ] リポジトリ `repository.py` / モックハンドラ `mock_handlers.py`
-- [ ] `tests/test_style_alchemy.py` 全件パス
+- [x] 選好学習 `preference_engine.py`（Elo・Bradley-Terry MM・リッジ/ロジスティック・重要度・CI・能動学習ペア）
+- [x] 最適化 `model_optimizer.py`（パラメータ空間・GP・EI/UCB/PI・CMA-ES・GA・提案・エクスポーター）
+- [x] データセット精製 `dataset_curator.py`（クレンジング・共起/NPMI/エントロピー・癒着検出・ギャップ分析・LLM連携）
+- [x] グリッド実験 `grid_laboratory.py`（トークン辞書・XYZバッチ・分析）
+- [x] リポジトリ `repository.py` / モックハンドラ `mock_handlers.py`
+- [x] `tests/test_style_alchemy.py` 全件パス
 
 ## Phase 4：構造駆動型・漫画ネーム＆ComfyUI生成パイプライン（`core/manga_pipeline/`）
 - [ ] 漫画演出スキーマ `schemas.py`（ページ幾何・コマポリゴン・カメラ・フキダシ・オノマトペ・見開き）

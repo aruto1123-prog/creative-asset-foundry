@@ -40,6 +40,7 @@ _LAZY_SUBMODULES = (
     "repository",
     "mock_handlers",
     "prompts",
+    "preview",
 )
 
 
