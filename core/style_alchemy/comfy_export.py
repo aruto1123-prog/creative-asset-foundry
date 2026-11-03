@@ -40,6 +40,7 @@ __all__ = [
     "build_txt2img_workflow",
     "adapt_prompt_to_object_info",
     "snap_resolution",
+    "validate_prompt",
 ]
 
 LBW_NODE_CLASS = "LoraLoaderBlockWeight //Inspire"
@@ -207,6 +208,28 @@ class ComfyGraphBuilder:
 
     def to_prompt(self) -> dict[str, Any]:
         return copy.deepcopy(self._nodes)
+
+    @classmethod
+    def from_prompt(cls, prompt: dict[str, Any]) -> "ComfyGraphBuilder":
+        """既存の API 形式ワークフローからビルダーを復元する（検証・追加編集用）。"""
+        numeric_ids = [int(node_id) for node_id in prompt if str(node_id).isdigit()]
+        builder = cls(start_id=(max(numeric_ids) + 1) if numeric_ids else 1)
+        for node_id, node in prompt.items():
+            if not isinstance(node, dict) or "class_type" not in node:
+                raise ValueError(f"ノード {node_id} は class_type を持つ dict である必要があります")
+            builder._nodes[str(node_id)] = copy.deepcopy(node)
+            builder._nodes[str(node_id)].setdefault("inputs", {})
+        return builder
+
+
+def validate_prompt(prompt: dict[str, Any]) -> list[str]:
+    """API 形式ワークフローの構造検証（未定義参照・出力範囲外・循環・出力ノード欠如）。"""
+    builder = ComfyGraphBuilder.from_prompt(prompt)
+    problems = builder.validate()
+    output_classes = {"SaveImage", "PreviewImage"}
+    if not any(node["class_type"] in output_classes for node in builder.nodes().values()):
+        problems.append("出力ノード（SaveImage / PreviewImage）がありません")
+    return problems
 
 
 class ModelStackRefs(BaseModel):
