@@ -796,3 +796,14 @@ def test_publisher_sources_are_python310_compatible() -> None:
         ast.parse(source, filename=str(path), feature_version=(3, 10))
         problems.extend(f"{path.name}:{issue}" for issue in _pep701_violations(source))
     assert problems == []
+
+
+def test_url_removal_collapses_leftover_punctuation() -> None:
+    from core.asset_publisher.sanitizer import sanitize_text as _sanitize
+
+    cleaned, report = _sanitize("詳細は https://example.com/a 、https://example.org/b 。以上。比較は bit.ly/zz 、 hxxps://evil[.]com 、で行った。")
+    assert report.url_free
+    assert "、、" not in cleaned
+    assert "、。" not in cleaned
+    assert "。、" not in cleaned
+    assert cleaned.startswith("詳細は。以上。")

@@ -638,6 +638,10 @@ _EMPTY_LIST_ITEM_RE = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)])[ \t]*(?:\n|$)", re.M
 _INNER_SPACES_RE = re.compile(r"(?<=\S)[ \t]{2,}(?=\S)")
 _TRAILING_SPACES_RE = re.compile(r"[ \t]+(?=\n|$)")
 _SPACE_BEFORE_PUNCT_RE = re.compile(r"[ \t]+(?=[、。，．])")
+# URL 除去で生じる読点の重複（「、、」）と読点・句点の衝突（「、。」「。、」）を畳み込む
+_DUPLICATE_COMMA_RE = re.compile(r"、(?:[ \t　]*、)+")
+_COMMA_BEFORE_PERIOD_RE = re.compile(r"、[ \t　]*。")
+_COMMA_AFTER_PERIOD_RE = re.compile(r"。[ \t　]*、")
 _MANY_NEWLINES_RE = re.compile(r"\n{3,}")
 _LEADING_SPACES_RE = re.compile(r"^[ ]{1,3}(?=[^\s\-*+\d>|])", re.MULTILINE)
 
@@ -662,6 +666,9 @@ def _cleanup_prose(chunk: str) -> str:
         current = _EMPTY_LIST_ITEM_RE.sub("", current)
         current = _INNER_SPACES_RE.sub(" ", current)
         current = _SPACE_BEFORE_PUNCT_RE.sub("", current)
+        current = _DUPLICATE_COMMA_RE.sub("、", current)
+        current = _COMMA_BEFORE_PERIOD_RE.sub("。", current)
+        current = _COMMA_AFTER_PERIOD_RE.sub("。", current)
         current = _TRAILING_SPACES_RE.sub("", current)
         current = _LEADING_SPACES_RE.sub("", current)
         current = _MANY_NEWLINES_RE.sub("\n\n", current)
