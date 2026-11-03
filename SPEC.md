@@ -566,7 +566,7 @@ class GrammarReport: score∈[0,100], passed, violations, metrics: dict[str,floa
 class Storyboard: id, title, structure_id, theme, geometry, first_page_side, pages, spreads, characters, seed, grammar: GrammarReport|None, revision_log, created_at
     panels_in_reading_order(), panel(id), page_count (property)
 # storyboard_generator.py
-class StoryboardConfig: target_pages=16 [4..64], min_panels_per_page=2, max_panels_per_page=7, first_page_side=LEFT, max_chars_per_balloon=40,
+class StoryboardConfig: target_pages=16 [4..64], min_panels_per_page=2, max_panels_per_page=7, first_page_side=RIGHT（右ページ開始・左ページ終端でめくり）, max_chars_per_balloon=40,
                         max_chars_per_column=7, max_balloons_per_panel=3, grammar_threshold=80.0, max_fix_iterations=6, seed=0, use_llm_dialogue=False
 class StoryboardGenerator: __init__(config=None, llm_client=None); generate(structure, theme=None, characters=None)->Storyboard
     generate_validated_sync(structure, theme=None, characters=None)->Storyboard; async generate_validated(...)->Storyboard
