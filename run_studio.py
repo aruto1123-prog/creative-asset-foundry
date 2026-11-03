@@ -134,7 +134,8 @@ def initialize_foundry() -> dict[str, object]:
     settings = FoundrySettings.load()
     settings.ensure_dirs()
     if not settings.config_path.exists():
-        settings.save()
+        # 既定値のみを永続化する（CLI 引数・環境変数による一時的な上書きは config.json に書き込まない）
+        FoundrySettings(data_dir=settings.data_dir).save()
     db = Database(settings.db_path)
     repo = StructureRepository(db)
     report = seed_database(repo, overwrite=False)
