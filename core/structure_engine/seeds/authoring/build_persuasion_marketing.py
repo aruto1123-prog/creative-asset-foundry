@@ -28,6 +28,7 @@ from typing import Any
 
 import numpy as np
 
+from core.structure_engine.consistency import audit_structure
 from core.structure_engine.schemas import (
     WAVE_CHANNELS,
     WAVE_MIN_POINTS,
@@ -221,7 +222,7 @@ PATTERN_DEFINITIONS.append(
                ["b02_premise"], 0.28, -0.15, ["reader", "plateau"]),
             _b("b04_twist", "structural_twist", 0.45, "反証データによる前提崩壊",
                "通説の予測と系統的に食い違う反証データを提示し、頭打ちの真因が努力不足ではなく前提の誤りにあったと反転させる。",
-               ["b03_limit"], 0.28, -0.2, ["evidence", "consensus", "author"], True),
+               ["b03_limit"], 0.28, 0.12, ["evidence", "consensus", "author"], True),
             _b("b05_reveal", "revelation", 0.55, "新モデルの提示",
                "反証と従来の成功例の両方を一つの因果で説明する新しいモデルを示し、読者が自力で腑に落ちる余白を残して開示する。",
                ["b04_twist"], -0.41, 0.35, ["new_model", "evidence", "reader"], True),
@@ -368,7 +369,7 @@ PATTERN_DEFINITIONS.append(
                [], 0.25, -0.1, ["prospect", "pain"]),
             _b("b02_agitation", "escalation", 0.25, "放置の代償の増幅",
                "悩みを放置した場合に失われ続けるものを時間軸で示し、問題の重さを再認識させる。恐怖を誇張せず事実の範囲で行う。",
-               ["b01_problem"], 0.31, -0.05, ["pain", "prospect"]),
+               ["b01_problem"], 0.31, -0.05, ["pain", "prospect"], True),
             _b("b03_affinity", "premise", 0.35, "語り手の共感と過去の失敗",
                "語り手自身も同じ悩みを抱え、誤った原因に基づく対処を繰り返していたことを打ち明け、心理的距離を縮める。",
                ["b02_agitation"], -0.34, -0.1, ["guide", "prospect", "false_cause"]),
@@ -797,6 +798,7 @@ PATTERN_DEFINITIONS.append(
             _e("narrator", "reader", "asymmetry", 0.6, "語り手は敵の仕組みの内側を知っている", 0.2, 0.45),
             _e("reader", "enemy", "opposition", 0.7, "仕組みへの憤り", 0.3),
             _e("enemy", "enemy_logic", "embodiment", 0.8, "敵の仕組みが論理として体現される", 0.3),
+            _e("reader", "enemy_logic", "dependency", 0.6, "慣れ親しんだ論理への無自覚な依存", 0.2),
             _e("enemy_logic", "reader", "betrayal", 0.75, "読者自身の習慣が敵の論理に加担していた", 0.55),
             _e("reader", "narrator", "dependency", 0.55, "同志としての語り手への信頼", 0.7),
             _e("reader", "new_way", "pursuit", 0.85, "敵の論理から自由になる方法への渇望", 0.7),
@@ -1258,7 +1260,7 @@ PATTERN_DEFINITIONS.append(
         "beats": [
             _b("b01_hook", "hook", 0.05, "懐疑への先回り",
                "また誇大な話だと思われたでしょうと読者の懐疑を先に言語化し、主張を控えめに一文で述べる。",
-               [], 0.06, -0.05, ["skeptic", "claim", "doubt"]),
+               [], 0.06, -0.05, ["skeptic", "claim", "doubt"], True),
             _b("b02_personal", "premise", 0.15, "最も弱い証拠からの開始",
                "語り手自身の体験という最も弱い証拠から始め、それが弱い証拠であることも明言する。",
                ["b01_hook"], -0.08, 0.03, ["presenter", "evidence_ladder"]),
@@ -2610,7 +2612,7 @@ PATTERN_DEFINITIONS.append(
         ],
         "wave": {
             "tension": [(0.0, 0.5), (0.05, 0.58), (0.2, 0.72), (0.3, 0.5), (0.45, 0.4), (0.55, 0.62), (0.65, 0.36),
-                        (0.8, 0.46), (1.0, 0.14)],
+                        (0.75, 0.42), (0.8, 0.56), (1.0, 0.14)],
             "release": [(0.0, 0.05), (0.2, 0.05), (0.3, 0.35), (0.45, 0.5), (0.55, 0.2), (0.65, 0.6), (0.8, 0.4),
                         (1.0, 0.85)],
             "audience_knowledge": [(0.0, 0.2), (0.2, 0.28), (0.3, 0.45), (0.45, 0.6), (0.55, 0.72), (0.65, 0.8),
@@ -2911,6 +2913,7 @@ PATTERN_DEFINITIONS.append(
             _e("vision", "status_quo", "opposition", 0.8, "未来像が現状の不条理を照らし出す", 0.3),
             _e("first_movers", "participant", "asymmetry", 0.5, "先に動いた仲間は道のりを知っている", 0.45, 0.4),
             _e("old_belonging", "participant", "opposition", 0.7, "旧い所属からの摩擦が参加を引き留める", 0.55),
+            _e("participant", "old_belonging", "dependency", 0.65, "旧い所属への長年の帰属と依存", 0.0),
             _e("participant", "old_belonging", "betrayal", 0.55, "参加が旧い所属への裏切りと受け取られる", 0.6),
             _e("public_act", "vision", "embodiment", 0.75, "表明が未来像を可視化する", 0.7),
             _e("participant", "first_movers", "dependency", 0.6, "仲間との帰属への依存", 0.85),
@@ -3302,6 +3305,8 @@ def validate_patterns(structures: list[UniversalStructure]) -> dict[str, Any]:
             jump = any(abs(audience[j] - audience[j - 1]) >= 0.08 for j in window if j >= 1)
             if not (window & extrema) and not jump:
                 errors.append(f"{sid}: 転換点 {beat.id}（t={beat.t}）が緊張度の極値・認知量の跳躍と一致しません")
+        for issue in audit_structure(structure):
+            errors.append(f"{sid}: 整合性監査 {issue.code}（{issue.location}）: {issue.message}")
         corpus = " ".join(structure.text_fields() + list(structure.metadata.lineage))
         if re.search(r"https?://|www\.", corpus):
             errors.append(f"{sid}: URL様の文字列を含みます")

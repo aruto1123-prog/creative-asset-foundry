@@ -33,6 +33,7 @@ from typing import Any
 
 import numpy as np
 
+from core.structure_engine.consistency import audit_structure
 from core.structure_engine.schemas import (
     WAVE_CHANNELS,
     EdgeKind,
@@ -277,6 +278,8 @@ def validate_all(structures: list[UniversalStructure]) -> list[str]:
     spec_by_id = {pattern_id(spec): spec for spec in PATTERNS}
     for structure in structures:
         problems.extend(quality_problems(spec_by_id[structure.id], structure))
+        for issue in audit_structure(structure):
+            problems.append(f"{structure.id}: 整合性監査 {issue.code}（{issue.location}）: {issue.message}")
     for first, second, r in tension_correlations(structures):
         if r >= MAX_TENSION_CORRELATION:
             problems.append(f"緊張波形が類似しすぎています: {first} × {second} r={r:.4f}")
@@ -649,7 +652,7 @@ PATTERNS.append(
             ("radiance", "payoff", 0.45, 0.06, "真価の発揮", "変身した主体が場の中心で真価を示し、認証者だけがその本質に惹かれる。", ["gift_of_night"], 0.15, 0.1, ["overlooked", "recognizer"], False),
             ("midnight_loss", "crisis", 0.6, 0.04, "時間切れの喪失", "制限時刻の到来で主体は逃げ去り、痕跡だけが残される。真価は再び見えなくなる。", ["radiance"], 0.25, 0.05, ["overlooked", "token", "recognizer"], True),
             ("search", "escalation", 0.72, 0.08, "痕跡による探索", "認証者が痕跡を手がかりに持ち主を探し、抑圧者は偽装で同定を妨げる。", ["midnight_loss"], -0.1, 0.1, ["recognizer", "oppressor", "token"], False),
-            ("false_claimants", "local_optimization_limit", 0.82, 0.05, "偽の持ち主たち", "抑圧者側の偽装が痕跡に合わず次々と失敗し、主体の存在は隠され続ける。", ["search"], 0.25, 0.0, ["oppressor", "recognizer", "token"], False),
+            ("false_claimants", "local_optimization_limit", 0.82, 0.05, "偽の持ち主たち", "抑圧者側の偽装が痕跡に合わず次々と失敗し、主体の存在は隠され続ける。", ["search"], 0.25, 0.0, ["oppressor", "recognizer", "token"], True),
             ("recognition_moment", "revelation", 0.92, 0.04, "真価の認証", "痕跡が主体に合致し、透明だった存在が公に同定されて地位と評価が反転する。", ["false_claimants", "radiance"], -0.4, -0.4, ["overlooked", "recognizer", "token", "recognition"], True),
             ("ascended_afterglow", "afterglow", 1.0, 0.05, "上昇の余韻", "主体は抑圧者を罰するのではなく許し、見られることを得た静かな幸福が示される。", ["recognition_moment"], -0.2, 0.0, ["overlooked", "oppressor"], False),
         ],
@@ -834,6 +837,7 @@ PATTERNS.append(
             ("sovereign", "thief", "power_gradient", 0.9, 0.9, "罰による見せしめ", 0.62),
             ("community", "thief", "dependency", 0.6, -0.4, "恩恵の源への依存", 0.45),
             ("community", "autonomy", "pursuit", 0.65, 0.0, "力を使いこなす学習", 0.5),
+            ("punishment", "thief", "power_gradient", 0.8, 0.8, "終わりなき罰が主体の自由を奪い続ける", 0.65),
         ],
         "beats": [
             ("dark_hook", "hook", 0.0, 0.05, "奪われた共同体", "力を持たない共同体が寒さと暗さの中で従属を強いられる姿が示される。", [], 0.2, 0.0, ["community", "sovereign"], False),
@@ -1029,6 +1033,7 @@ PATTERNS.append(
             ("pursuer", "proof", "pursuit", 0.85, 0.0, "立証への執念", 0.25),
             ("clue", "flaw", "embodiment", 0.8, 0.0, "痕跡が見落としを体現する", 0.35),
             ("pursuer", "perpetrator", "asymmetry", 0.6, 0.5, "追跡者だけが違和感の意味に気づく", 0.75),
+            ("flaw", "perpetrator", "power_gradient", 0.7, 0.5, "見落としが加害者の完全性を内側から崩す", 0.78),
         ],
         "beats": [
             ("crime_hook", "hook", 0.0, 0.08, "犯行の全開示", "加害者が周到な計画で犯行を遂げる一部始終が、読者にだけ示される。", [], 0.2, 0.3, ["perpetrator", "victim", "concealment"], False),
@@ -1124,6 +1129,7 @@ PATTERNS.append(
             ("pawn", "strategist_a", "betrayal", 0.65, 0.3, "駒の離反", 0.8),
             ("strategist_a", "victory", "pursuit", 0.9, 0.0, "知性の優位の証明", 0.1),
             ("rulebook", "victory", "embodiment", 0.6, 0.0, "規則の抜け穴が勝敗を体現する", 0.82),
+            ("isolation", "strategist_a", "power_gradient", 0.6, 0.5, "対等な理解者の不在が主体を孤高の策略へ駆り立てる", 0.1),
         ],
         "beats": [
             ("power_hook", "hook", 0.0, 0.05, "秘密の力の提示", "主体が誰にも知られずに力を行使できることが示され、読者だけが主体の正体を知る。", [], 0.15, 0.25, ["strategist_a", "rulebook"], False),
@@ -1182,8 +1188,8 @@ PATTERNS.append(
         "wave": {
             "tension": [(0.0, 0.35), (0.15, 0.55), (0.25, 0.4), (0.35, 0.7), (0.45, 0.5), (0.58, 0.85), (0.68, 0.6), (0.82, 0.97), (0.9, 0.7), (1.0, 0.45)],
             "release": [(0.0, 0.05), (0.25, 0.3), (0.35, 0.05), (0.45, 0.35), (0.58, 0.05), (0.68, 0.35), (0.82, 0.05), (0.92, 0.6), (1.0, 0.7)],
-            "audience_knowledge": [(0.0, 0.3), (0.15, 0.5), (0.35, 0.55), (0.45, 0.7), (0.58, 0.65), (0.7, 0.8), (0.82, 0.75), (0.92, 1.0), (1.0, 1.0)],
-            "character_knowledge": [(0.0, 0.05), (0.15, 0.15), (0.35, 0.45), (0.45, 0.4), (0.58, 0.7), (0.7, 0.6), (0.82, 0.85), (0.92, 1.0), (1.0, 1.0)],
+            "audience_knowledge": [(0.0, 0.3), (0.15, 0.5), (0.35, 0.55), (0.4, 0.56), (0.45, 0.7), (0.58, 0.65), (0.7, 0.8), (0.82, 0.75), (0.92, 1.0), (1.0, 1.0)],
+            "character_knowledge": [(0.0, 0.05), (0.15, 0.15), (0.35, 0.45), (0.4, 0.52), (0.45, 0.4), (0.58, 0.7), (0.7, 0.6), (0.82, 0.85), (0.92, 1.0), (1.0, 1.0)],
             "cognitive_load": [(0.0, 0.5), (0.2, 0.6), (0.35, 0.75), (0.58, 0.85), (0.82, 0.95), (0.92, 0.7), (1.0, 0.45)],
         },
     }
@@ -1220,6 +1226,7 @@ PATTERNS.append(
             ("avenger", "betrayer", "opposition", 0.9, 0.5, "復讐の執行", 0.62),
             ("mask", "humanity", "embodiment", 0.7, 0.0, "仮面が失われた人間性を体現する", 0.5),
             ("beloved", "avenger", "dependency", 0.4, 0.0, "消えない想い", 0.9),
+            ("humanity", "avenger", "power_gradient", 0.7, 0.6, "失われゆく人間性が復讐者を内側から侵食する", 0.55),
         ],
         "beats": [
             ("happy_hook", "hook", 0.0, 0.05, "幸福の頂点", "誠実な主体が地位と愛を手にする寸前の幸福が描かれ、失われるものの大きさが示される。", [], 0.0, 0.0, ["avenger", "beloved", "betrayer"], False),
@@ -1416,6 +1423,7 @@ PATTERNS.append(
             ("survivor", "group", "opposition", 0.6, 0.0, "相互の疑心", 0.4),
             ("group", "orchestrator", "dependency", 0.5, -0.3, "犠牲者を装った者への信頼", 0.5),
             ("orchestrator", "group", "betrayal", 0.85, 0.7, "犠牲者の偽装", 0.55),
+            ("trust", "group", "power_gradient", 0.75, 0.7, "信頼の欠如が集団を相互不信へ追い込む", 0.3),
         ],
         "beats": [
             ("gathering_hook", "hook", 0.0, 0.05, "招かれた者たち", "互いに面識のない者たちが閉ざされた空間に集められ、過去の罪を告発する声が響く。", [], 0.15, 0.05, ["group", "orchestrator", "isolation_field"], False),
@@ -1705,6 +1713,7 @@ PATTERNS.append(
             ("witness", "creature", "betrayal", 0.6, 0.3, "恐れに負けた一度の背信", 0.62),
             ("witness", "mob", "opposition", 0.6, -0.5, "共同体への異議", 0.85),
             ("scar", "otherness", "embodiment", 0.7, 0.0, "徴が共同体の想像力の欠如を映す", 0.55),
+            ("otherness", "mob", "power_gradient", 0.7, 0.6, "他者への想像力の欠如が共同体を排除へ駆り立てる", 0.1),
         ],
         "beats": [
             ("fear_hook", "hook", 0.05, 0.05, "異形の出現", "共同体の前に異形の存在が姿を現し、悲鳴とともに恐怖の対象として刻まれる。", [], 0.25, 0.0, ["creature", "mob", "scar"], False),
@@ -1804,6 +1813,7 @@ PATTERNS.append(
             ("misfits", "stakes", "pursuit", 0.7, 0.0, "守るべきものへの献身", 0.62),
             ("leader", "giant", "asymmetry", 0.55, 0.4, "欠点の組み合わせという誰も知らない武器", 0.75),
             ("misfits", "giant", "opposition", 0.85, -0.8, "弱者の挑戦", 0.85),
+            ("cohesion", "misfits", "power_gradient", 0.7, 0.6, "結束の欠如が集団の力を内側から削ぐ", 0.2),
         ],
         "beats": [
             ("misfit_hook", "hook", 0.0, 0.05, "居場所を失った者たち", "それぞれの場所で欠点ゆえに居場所を失った者たちが、短い場面の連続で紹介される。", [], 0.1, 0.05, ["misfits", "leader"], False),
@@ -2000,6 +2010,7 @@ PATTERNS.append(
             ("guardians", "dweller", "betrayal", 0.75, 0.6, "幸福の欺瞞", 0.55),
             ("happiness", "hidden_one", "opposition", 0.85, 0.8, "多数の幸福と一人の犠牲の対立", 0.55),
             ("dweller", "hidden_one", "pursuit", 0.6, 0.0, "犠牲者への接近", 0.75),
+            ("complicity", "dweller", "power_gradient", 0.65, 0.5, "知らずに続けてきた加担が主体の幸福を蝕む", 0.6),
         ],
         "beats": [
             ("idyll_hook", "hook", 0.0, 0.06, "完璧な日常", "争いも欠乏もない共同体の満ち足りた日常が、隅々まで美しく描かれる。", [], 0.0, 0.0, ["dweller", "happiness", "guardians"], False),
@@ -2097,6 +2108,7 @@ PATTERNS.append(
             ("hero", "people", "power_gradient", 0.85, 0.85, "守るための支配", 0.55),
             ("hero", "comrade", "betrayal", 0.75, 0.6, "理想の裏切り", 0.7),
             ("comrade", "hero", "opposition", 0.9, -0.5, "かつての英雄への反逆", 0.85),
+            ("restraint", "hero", "power_gradient", 0.75, 0.6, "歯止めの欠如が主体を支配へと駆り立てる", 0.5),
         ],
         "beats": [
             ("oppression_hook", "hook", 0.0, 0.05, "圧政下の共同体", "圧政に苦しむ共同体の中から、理想に燃える主体が立ち上がる。", [], 0.2, 0.0, ["hero", "old_tyrant", "people"], False),
@@ -2194,6 +2206,7 @@ PATTERNS.append(
             ("old_place", "guilt", "embodiment", 0.75, 0.0, "記憶の場所が罪悪感を体現する", 0.3),
             ("returnee", "forgiveness", "pursuit", 0.8, 0.0, "償いの機会の探求", 0.35),
             ("ally", "hometown", "asymmetry", 0.45, 0.3, "理解者だけが主体の変化を知る", 0.45),
+            ("guilt", "returnee", "power_gradient", 0.75, 0.6, "消えない罪悪感が主体を縛り続ける", 0.05),
         ],
         "beats": [
             ("past_hook", "hook", 0.0, 0.05, "過去の過ち", "主体が過ちを犯し、責任から逃げて故郷を去った過去の一場面が断片的に示される。", [], 0.2, 0.0, ["returnee", "wronged", "old_place"], False),

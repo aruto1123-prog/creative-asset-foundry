@@ -2597,7 +2597,7 @@
               "recognizer",
               "token"
             ],
-            "is_turning_point": false
+            "is_turning_point": true
           },
           {
             "id": "recognition_moment",
@@ -3698,6 +3698,15 @@
             "gradient": 0.0,
             "label": "力を使いこなす学習",
             "activation_t": 0.5
+          },
+          {
+            "source": "punishment",
+            "target": "thief",
+            "kind": "power_gradient",
+            "intensity": 0.8,
+            "gradient": 0.8,
+            "label": "終わりなき罰が主体の自由を奪い続ける",
+            "activation_t": 0.65
           }
         ]
       },
@@ -5110,6 +5119,15 @@
             "gradient": 0.5,
             "label": "追跡者だけが違和感の意味に気づく",
             "activation_t": 0.75
+          },
+          {
+            "source": "flaw",
+            "target": "perpetrator",
+            "kind": "power_gradient",
+            "intensity": 0.7,
+            "gradient": 0.5,
+            "label": "見落としが加害者の完全性を内側から崩す",
+            "activation_t": 0.78
           }
         ]
       },
@@ -5796,6 +5814,15 @@
             "gradient": 0.0,
             "label": "規則の抜け穴が勝敗を体現する",
             "activation_t": 0.82
+          },
+          {
+            "source": "isolation",
+            "target": "strategist_a",
+            "kind": "power_gradient",
+            "intensity": 0.6,
+            "gradient": 0.5,
+            "label": "対等な理解者の不在が主体を孤高の策略へ駆り立てる",
+            "activation_t": 0.1
           }
         ]
       },
@@ -5874,11 +5901,11 @@
           0.387,
           0.4584,
           0.5,
-          0.5157,
-          0.5242,
-          0.5332,
+          0.518,
+          0.5304,
+          0.5402,
           0.55,
-          0.6308,
+          0.56,
           0.7,
           0.6835,
           0.6568,
@@ -5897,11 +5924,11 @@
           0.0727,
           0.1074,
           0.15,
-          0.2224,
-          0.3227,
-          0.4116,
+          0.2089,
+          0.2867,
+          0.3712,
           0.45,
-          0.425,
+          0.52,
           0.4,
           0.499,
           0.6594,
@@ -5943,11 +5970,11 @@
           0.3143,
           0.351,
           0.35,
-          0.2933,
-          0.2015,
-          0.1216,
+          0.3091,
+          0.2437,
+          0.169,
           0.1,
-          0.2058,
+          0.04,
           0.3,
           0.1845,
           -0.0026,
@@ -6490,6 +6517,15 @@
             "gradient": 0.0,
             "label": "消えない想い",
             "activation_t": 0.9
+          },
+          {
+            "source": "humanity",
+            "target": "avenger",
+            "kind": "power_gradient",
+            "intensity": 0.7,
+            "gradient": 0.6,
+            "label": "失われゆく人間性が復讐者を内側から侵食する",
+            "activation_t": 0.55
           }
         ]
       },
@@ -7930,6 +7966,15 @@
             "gradient": 0.7,
             "label": "犠牲者の偽装",
             "activation_t": 0.55
+          },
+          {
+            "source": "trust",
+            "target": "group",
+            "kind": "power_gradient",
+            "intensity": 0.75,
+            "gradient": 0.7,
+            "label": "信頼の欠如が集団を相互不信へ追い込む",
+            "activation_t": 0.3
           }
         ]
       },
@@ -10039,6 +10084,15 @@
             "gradient": 0.0,
             "label": "徴が共同体の想像力の欠如を映す",
             "activation_t": 0.55
+          },
+          {
+            "source": "otherness",
+            "target": "mob",
+            "kind": "power_gradient",
+            "intensity": 0.7,
+            "gradient": 0.6,
+            "label": "他者への想像力の欠如が共同体を排除へ駆り立てる",
+            "activation_t": 0.1
           }
         ]
       },
@@ -10761,6 +10815,15 @@
             "gradient": -0.8,
             "label": "弱者の挑戦",
             "activation_t": 0.85
+          },
+          {
+            "source": "cohesion",
+            "target": "misfits",
+            "kind": "power_gradient",
+            "intensity": 0.7,
+            "gradient": 0.6,
+            "label": "結束の欠如が集団の力を内側から削ぐ",
+            "activation_t": 0.2
           }
         ]
       },
@@ -12207,6 +12270,15 @@
             "gradient": 0.0,
             "label": "犠牲者への接近",
             "activation_t": 0.75
+          },
+          {
+            "source": "complicity",
+            "target": "dweller",
+            "kind": "power_gradient",
+            "intensity": 0.65,
+            "gradient": 0.5,
+            "label": "知らずに続けてきた加担が主体の幸福を蝕む",
+            "activation_t": 0.6
           }
         ]
       },
@@ -12912,6 +12984,15 @@
             "gradient": -0.5,
             "label": "かつての英雄への反逆",
             "activation_t": 0.85
+          },
+          {
+            "source": "restraint",
+            "target": "hero",
+            "kind": "power_gradient",
+            "intensity": 0.75,
+            "gradient": 0.6,
+            "label": "歯止めの欠如が主体を支配へと駆り立てる",
+            "activation_t": 0.5
           }
         ]
       },
@@ -13626,6 +13707,15 @@
             "gradient": 0.3,
             "label": "理解者だけが主体の変化を知る",
             "activation_t": 0.45
+          },
+          {
+            "source": "guilt",
+            "target": "returnee",
+            "kind": "power_gradient",
+            "intensity": 0.75,
+            "gradient": 0.6,
+            "label": "消えない罪悪感が主体を縛り続ける",
+            "activation_t": 0.05
           }
         ]
       },

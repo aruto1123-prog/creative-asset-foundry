@@ -21,6 +21,7 @@ from typing import Any
 
 import numpy as np
 
+from core.structure_engine.consistency import audit_structure
 from core.structure_engine.schemas import WAVE_CHANNELS, EdgeKind, EmotionalInformationWave, UniversalStructure
 
 OUTPUT_PATH = Path(__file__).resolve().parents[1] / "manga_panel_rhythm_patterns.json"
@@ -243,6 +244,8 @@ def validate_patterns(specs: list[dict[str, Any]], structures: list[UniversalStr
             count = len(spec["waves"].get(channel, []))
             if not 6 <= count <= 12:
                 problems.append(f"{sid}: {channel} のキーフレーム数 {count} が6〜12の範囲外")
+        for issue in audit_structure(s):
+            problems.append(f"{sid}: 整合性監査 {issue.code}（{issue.location}）: {issue.message}")
         profile = s.rhythm_profile
         if profile is None:
             problems.append(f"{sid}: rhythm_profile がありません")
@@ -347,7 +350,7 @@ PATTERNS.append(
             ("b_intrusion", "escalation", 0.6, 0.06, "違和の接近", "伏線が視点人物の手の届く範囲へ寄り、左ページ最終コマが引きになる", ["b_seed_unease", "b_shock"], 0.3, 0.1, ["viewpoint", "anomaly"], False),
             ("b_link_reveal", "revelation", 0.75, 0.06, "めくり直後の接続の開示", "右ページ冒頭の大ゴマで冒頭の衝撃と日常が一本の因果で結ばれる", ["b_intrusion"], 0.4, 0.5, ["hidden_link", "anomaly", "viewpoint"], True),
             ("b_refusal", "crisis", 0.85, 0.05, "視点人物の拒絶", "事態を受け入れられない一瞬の反応ゴマで呼吸を作る", ["b_link_reveal"], -0.1, 0.0, ["viewpoint"], False),
-            ("b_pull", "hook", 1.0, 0.04, "後戻りできない一線の引き", "ページ末尾で視点人物が境界を越えざるを得ない状況を示し次ページへ牽引する", ["b_refusal", "b_link_reveal"], 0.3, 0.1, ["viewpoint", "anomaly"], True),
+            ("b_pull", "climax", 1.0, 0.04, "後戻りできない一線の引き", "ページ末尾で視点人物が境界を越えざるを得ない状況を示し次ページへ牽引する", ["b_refusal", "b_link_reveal"], 0.3, 0.1, ["viewpoint", "anomaly"], True),
         ],
         "mechanisms": [
             ("m_question_first", "curiosity_gap", "問いの先行提示", "答えのない断片を最初に見せ、解消への欲求を日常描写のあいだ持続させる", "文脈を欠いた衝撃の一枚絵", "読者が答えを探して日常のコマを能動的に読む", "情報ギャップ理論", 0.85, ["b_shock", "b_link_reveal"], ["reader_question"]),
@@ -705,6 +708,7 @@ PATTERNS.append(
             ("reader_deduction", "hidden_plan", "pursuit", 0.85, 0.0, "読者の推理が伏せられた策を追う", 0.1),
             ("reader_deduction", "game_rule", "dependency", 0.7, 0.0, "読者の推理は規則に依存する", 0.0),
             ("winning_move", "adversary", "power_gradient", 0.9, 0.9, "最終手が勢力を決定的に反転させる", 0.65),
+            ("adversary", "strategist", "dependency", 0.55, -0.3, "協力の申し出を信じて策士の提案に乗る", 0.3),
             ("strategist", "adversary", "betrayal", 0.6, 0.0, "協力を装った申し出が罠だったと判明する", 0.45),
             ("hidden_plan", "winning_move", "embodiment", 0.8, 0.0, "伏せられた策が最終手に結晶する", 0.65),
         ],
@@ -997,6 +1001,7 @@ PATTERNS.append(
             ("tsukkomi", "boke", "power_gradient", 0.5, 0.4, "ツッコミが場の解釈権を握る", 0.75),
             ("pattern_expectation", "hidden_twist", "pursuit", 0.75, 0.0, "読者の予測がオチを先読みしようとする", 0.4),
             ("boke", "hidden_twist", "asymmetry", 0.8, 0.7, "ボケだけが三度目の飛躍を抱えている", 0.5),
+            ("hidden_twist", "pattern_expectation", "dependency", 0.6, 0.0, "オチは二度のフリで確立された型に依存して成立する", 0.35),
             ("hidden_twist", "pattern_expectation", "betrayal", 0.85, 0.0, "オチが確立された型を裏切る", 0.65),
             ("common_sense", "tsukkomi", "embodiment", 0.55, 0.0, "常識の型がツッコミの言葉に体現される", 0.75),
         ],
@@ -1194,7 +1199,7 @@ PATTERNS.append(
             ("b_cross_cut", "setup", 0.4, 0.06, "追跡者側のカットバック", "読者だけに追跡者の接近を見せ、主体の知らない距離を示す", ["b_shake_off"], 0.18, 0.15, ["pursuer", "closing_distance"], False),
             ("b_false_escape", "false_victory", 0.45, 0.05, "撒いたという錯覚", "主体が物陰で息をつき、逃げ切ったと思う小ゴマを置く", ["b_cross_cut"], -0.1, 0.05, ["runner", "escape_goal"], True),
             ("b_corner", "crisis", 0.6, 0.08, "再捕捉", "追跡者が再び現れ、コマが傾き始めて焦燥が加速する", ["b_false_escape"], 0.2, 0.05, ["pursuer", "speed_lines"], False),
-            ("b_dead_end", "revelation", 0.85, 0.05, "めくり直後の行き止まり", "右ページ上段の大ゴマで逃走路の終端を全景で見せる", ["b_corner"], 0.26, 0.15, ["dead_end", "runner"], True),
+            ("b_dead_end", "revelation", 0.85, 0.05, "めくり直後の行き止まり", "右ページ上段の大ゴマで逃走路の終端を全景で見せる", ["b_corner"], 0.26, -0.1, ["dead_end", "runner"], True),
             ("b_leap", "costly_breakthrough", 0.95, 0.05, "代償を伴う跳躍", "傷や持ち物の喪失と引き換えに境界を越え、追跡を振り切る", ["b_dead_end"], -0.48, 0.2, ["runner", "pursuer", "escape_goal"], True),
             ("b_aftermath", "afterglow", 1.0, 0.04, "息を整える余韻", "失ったものを確かめる主体の小ゴマで、次の追跡の予感を残す", ["b_leap"], 0.05, 0.0, ["runner"], False),
         ],
@@ -1384,7 +1389,7 @@ PATTERNS.append(
             ("b_rationalize", "transition", 0.5, 0.05, "合理化", "主体が違和に気づきかけるが、自分を納得させて日常へ戻る", ["b_anomaly_grows"], -0.04, -0.02, ["victim", "hidden_truth"], False),
             ("b_evidence", "escalation", 0.7, 0.06, "否定できない痕跡", "主体の身の回りに否定しがたい痕跡が現れ、緊張が高まる", ["b_rationalize"], 0.22, 0.1, ["presence", "victim"], False),
             ("b_false_relief", "false_victory", 0.75, 0.05, "偽りの安堵", "痕跡が勘違いだったと説明され、主体も読者もいったん安堵する", ["b_evidence"], -0.22, 0.02, ["victim"], True),
-            ("b_turn_reveal", "revelation", 0.9, 0.05, "めくりの戦慄", "最後のめくり直後、安堵の場面のすぐ背後に存在の全貌が現れる", ["b_false_relief", "b_anomaly1"], 0.5, 0.4, ["presence", "hidden_truth", "victim"], True),
+            ("b_turn_reveal", "revelation", 0.9, 0.05, "めくりの戦慄", "最後のめくり直後、安堵の場面のすぐ背後に存在の全貌が現れる", ["b_false_relief", "b_anomaly1"], 0.5, -0.25, ["presence", "hidden_truth", "victim"], True),
             ("b_residue", "afterglow", 1.0, 0.06, "解決されない残像", "説明も救済もないまま、存在の視線だけを残して終える", ["b_turn_reveal"], -0.15, 0.03, ["presence", "reader_dread"], False),
         ],
         "mechanisms": [
@@ -1860,6 +1865,7 @@ PATTERNS.append(
             ("reader_solve", "clues", "dependency", 0.75, 0.0, "読者の推理は提示された手がかりに依存する", 0.1),
             ("false_lead", "reader_solve", "power_gradient", 0.55, 0.4, "誤誘導が読者の推理を一時的に支配する", 0.2),
             ("clues", "truth", "embodiment", 0.8, 0.0, "手がかりの連鎖が真相を体現する", 0.6),
+            ("detective", "culprit", "dependency", 0.5, -0.2, "協力者として証言を頼りにする", 0.3),
             ("culprit", "detective", "betrayal", 0.6, 0.0, "協力者を装っていた人物が隠す者だった", 0.9),
             ("detective", "culprit", "power_gradient", 0.8, 0.9, "指摘によって主体が決定的に優位に立つ", 0.9),
         ],
@@ -1975,7 +1981,7 @@ PATTERNS.append(
             ("b_last_calm", "transition", 0.75, 0.04, "最後の平穏", "左ページ末尾に主体の穏やかな表情の小ゴマを置く", ["b_unease"], -0.06, 0.0, ["hero", "peace_desire"], True),
             ("b_threat_reveal", "revelation", 0.8, 0.05, "脅威の出現", "めくり直後の大ゴマで、より大きな脅威が姿を現す", ["b_last_calm", "b_unease"], 0.54, 0.15, ["greater_threat", "omen"], True),
             ("b_reaction", "crisis", 0.9, 0.04, "反応の凍結", "主体と仲間が凍りつく反応のコマで一拍置く", ["b_threat_reveal"], -0.06, 0.0, ["hero"], False),
-            ("b_to_be_continued", "hook", 1.0, 0.04, "引きの最終コマ", "左ページ最終コマで答えのない問いを突きつけて終える", ["b_reaction", "b_resolution"], 0.13, 0.05, ["greater_threat", "unresolved_question", "local_problem"], True),
+            ("b_to_be_continued", "climax", 1.0, 0.04, "引きの最終コマ", "左ページ最終コマで答えのない問いを突きつけて終える", ["b_reaction", "b_resolution"], 0.13, 0.05, ["greater_threat", "unresolved_question", "local_problem"], True),
         ],
         "mechanisms": [
             ("m_cliffhanger", "zeigarnik", "未完了による持ち越し", "答えのない問いで終えることで、未完了の緊張が次回まで持続する", "最終コマの問い", "次回を読まずにはいられない", "未完了効果（ツァイガルニク効果）", 0.9, ["b_to_be_continued"], ["unresolved_question"]),

@@ -406,7 +406,7 @@
               "b03_limit"
             ],
             "tension_delta": 0.28,
-            "information_shift": -0.2,
+            "information_shift": 0.12,
             "involved_nodes": [
               "evidence",
               "consensus",
@@ -1080,7 +1080,7 @@
               "pain",
               "prospect"
             ],
-            "is_turning_point": false
+            "is_turning_point": true
           },
           {
             "id": "b03_affinity",
@@ -2949,6 +2949,15 @@
             "gradient": 0.0,
             "label": "敵の仕組みが論理として体現される",
             "activation_t": 0.3
+          },
+          {
+            "source": "reader",
+            "target": "enemy_logic",
+            "kind": "dependency",
+            "intensity": 0.6,
+            "gradient": 0.0,
+            "label": "慣れ親しんだ論理への無自覚な依存",
+            "activation_t": 0.2
           },
           {
             "source": "enemy_logic",
@@ -5250,7 +5259,7 @@
               "claim",
               "doubt"
             ],
-            "is_turning_point": false
+            "is_turning_point": true
           },
           {
             "id": "b02_personal",
@@ -11492,12 +11501,12 @@
           0.62,
           0.49,
           0.36,
-          0.3859,
-          0.4341,
-          0.46,
-          0.4371,
-          0.3724,
-          0.2714,
+          0.3767,
+          0.42,
+          0.56,
+          0.5508,
+          0.5005,
+          0.3749,
           0.14
         ],
         "release": [
@@ -12842,6 +12851,15 @@
             "gradient": 0.0,
             "label": "旧い所属からの摩擦が参加を引き留める",
             "activation_t": 0.55
+          },
+          {
+            "source": "participant",
+            "target": "old_belonging",
+            "kind": "dependency",
+            "intensity": 0.65,
+            "gradient": 0.0,
+            "label": "旧い所属への長年の帰属と依存",
+            "activation_t": 0.0
           },
           {
             "source": "participant",

@@ -426,7 +426,7 @@
           },
           {
             "id": "b_pull",
-            "beat_type": "hook",
+            "beat_type": "climax",
             "t": 1.0,
             "span": 0.04,
             "label": "後戻りできない一線の引き",
@@ -2836,6 +2836,15 @@
             "activation_t": 0.65
           },
           {
+            "source": "adversary",
+            "target": "strategist",
+            "kind": "dependency",
+            "intensity": 0.55,
+            "gradient": -0.3,
+            "label": "協力の申し出を信じて策士の提案に乗る",
+            "activation_t": 0.3
+          },
+          {
             "source": "strategist",
             "target": "adversary",
             "kind": "betrayal",
@@ -4987,6 +4996,15 @@
           {
             "source": "hidden_twist",
             "target": "pattern_expectation",
+            "kind": "dependency",
+            "intensity": 0.6,
+            "gradient": 0.0,
+            "label": "オチは二度のフリで確立された型に依存して成立する",
+            "activation_t": 0.35
+          },
+          {
+            "source": "hidden_twist",
+            "target": "pattern_expectation",
             "kind": "betrayal",
             "intensity": 0.85,
             "gradient": 0.0,
@@ -6686,7 +6704,7 @@
               "b_corner"
             ],
             "tension_delta": 0.26,
-            "information_shift": 0.15,
+            "information_shift": -0.1,
             "involved_nodes": [
               "dead_end",
               "runner"
@@ -8099,7 +8117,7 @@
               "b_anomaly1"
             ],
             "tension_delta": 0.5,
-            "information_shift": 0.4,
+            "information_shift": -0.25,
             "involved_nodes": [
               "presence",
               "hidden_truth",
@@ -11375,6 +11393,15 @@
             "activation_t": 0.6
           },
           {
+            "source": "detective",
+            "target": "culprit",
+            "kind": "dependency",
+            "intensity": 0.5,
+            "gradient": -0.2,
+            "label": "協力者として証言を頼りにする",
+            "activation_t": 0.3
+          },
+          {
             "source": "culprit",
             "target": "detective",
             "kind": "betrayal",
@@ -12450,7 +12477,7 @@
           },
           {
             "id": "b_to_be_continued",
-            "beat_type": "hook",
+            "beat_type": "climax",
             "t": 1.0,
             "span": 0.04,
             "label": "引きの最終コマ",

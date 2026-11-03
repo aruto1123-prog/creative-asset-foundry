@@ -76,6 +76,17 @@ def test_seed_quality_criteria(all_seeds: list[UniversalStructure], index: int) 
         assert not _URL_RE.search(text), f"{s.id}: URL を含みます: {text[:60]}"
 
 
+def test_all_seeds_pass_consistency_audit(all_seeds: list[UniversalStructure]) -> None:
+    from core.structure_engine.consistency import audit_structure
+
+    problems = [
+        f"{structure.id}: {issue.code}（{issue.location}）{issue.message}"
+        for structure in all_seeds
+        for issue in audit_structure(structure)
+    ]
+    assert problems == [], "整合性監査の指摘があります:\n" + "\n".join(problems)
+
+
 def test_waves_are_distinct_within_category(all_seeds: list[UniversalStructure]) -> None:
     by_category: dict[str, list[UniversalStructure]] = {}
     for s in all_seeds:

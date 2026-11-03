@@ -70,12 +70,12 @@
 - [x] `tests/test_asset_publisher.py` 全件パス
 
 ## Phase 6：初期プリセット「普遍的構造データベース」（60パターン）
-- [ ] `narrative_archetypes.json`（20）
-- [ ] `manga_panel_rhythm_patterns.json`（20）
-- [ ] `persuasion_and_marketing_structures.json`（20）
-- [ ] 著作スクリプト `seeds/authoring/`
+- [x] `narrative_archetypes.json`（20）
+- [x] `manga_panel_rhythm_patterns.json`（20）
+- [x] `persuasion_and_marketing_structures.json`（20）
+- [x] 著作スクリプト `seeds/authoring/`
 - [x] SQLite初期シードローダー `seeds/loader.py`
-- [ ] `tests/test_seeds.py` 全件パス
+- [x] `tests/test_seeds.py` 全件パス
 
 ## Phase 7：統合ローカルWebスタジオUI（`web_studio/`）
 - [ ] FastAPI アプリファクトリ・サービスコンテナ・ジョブ管理・WebSocketハブ
