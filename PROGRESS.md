@@ -60,14 +60,14 @@
 - [ ] `tests/test_manga_pipeline.py` 全件パス
 
 ## Phase 5：R&D知見の自動体系化・マルチチャネル資産変換器（`core/asset_publisher/`）
-- [ ] スキーマ `schemas.py`
-- [ ] サニタイザー `sanitizer.py`（一人称「私」統一・URL完全除去・検証）
-- [ ] 3軸マトリクス `matrix_transpiler.py`
-- [ ] 5段階執筆 `writer_pipeline.py`（Blueprint → Drafting(Mermaid) → Sanitize → Critique → Polish）
-- [ ] ナレッジグラフ `knowledge_graph.py`（PageRank・コミュニティ・空白検出）
-- [ ] 編纂・出力 `exporter.py`（note / Obsidian / シリーズ）
-- [ ] リポジトリ・モックハンドラ
-- [ ] `tests/test_asset_publisher.py` 全件パス
+- [x] スキーマ `schemas.py`
+- [x] サニタイザー `sanitizer.py`（一人称「私」統一・URL完全除去・検証）
+- [x] 3軸マトリクス `matrix_transpiler.py`
+- [x] 5段階執筆 `writer_pipeline.py`（Blueprint → Drafting(Mermaid) → Sanitize → Critique → Polish）
+- [x] ナレッジグラフ `knowledge_graph.py`（PageRank・コミュニティ・空白検出）
+- [x] 編纂・出力 `exporter.py`（note / Obsidian / シリーズ）
+- [x] リポジトリ・モックハンドラ
+- [x] `tests/test_asset_publisher.py` 全件パス
 
 ## Phase 6：初期プリセット「普遍的構造データベース」（60パターン）
 - [ ] `narrative_archetypes.json`（20）
