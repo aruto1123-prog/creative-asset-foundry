@@ -44,6 +44,11 @@ _LAZY_SUBMODULES = (
     "layout_renderer",
     "prompts",
     "mock_handlers",
+    "diagnostics_schemas",
+    "diagnostics",
+    "diagnostics_overlay",
+    "page_vision",
+    "png_codec",
 )
 
 

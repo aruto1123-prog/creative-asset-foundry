@@ -761,3 +761,85 @@ JSONファイル形式: `{"schema_version": "1.0", "category": "<StructureCatego
 3. `npx tsc --noEmit` / `npm run build` エラー0件。
 4. 記事出力は `find_urls()==[]` かつ `detect_first_person_variants()==[]`。
 5. 全ネーム出力は `GrammarReport.passed` かつ `score >= grammar_threshold`。
+
+---
+
+## 14. Phase 9 — 初期プリセット拡張（60 → 100パターン）
+
+| ID | 要件 |
+|---|---|
+| P9-01 | `advanced_narrative_structures.json`（14、ID `an_01_*`〜`an_14_*`、category=`advanced_narrative`）: 枠物語・信頼できない語り手・二重時間軸の合流・群像の収束・メタフィクション・円環・多重反転・視点転換による価値反転・分岐と収束・喪失受容・伏線の一斉回収・悲喜劇反転・観測者効果 等の高度な物語構造。 |
+| P9-02 | `advanced_manga_direction_patterns.json`（13、ID `md_01_*`〜`md_13_*`、category=`manga_direction`、`rhythm_profile` 必須）: 連続見開き・縦長ゴマの落下感・枠線崩壊・定点反復・ぶち抜き威圧・モノローグ深潜・沈黙→一言・斜めゴマ加速・小ゴマ連打の時間圧縮・視線撹乱・対比見開き・回想枠表現・最終コマの大余白 等の高度な漫画演出。 |
+| P9-03 | `emotional_wave_presets.json`（13、ID `ew_01_*`〜`ew_13_*`、category=`emotional_wave`）: スローバーン・ジェットコースター・二段ロケット・鬱展開からの大逆転・静かな余韻・持続サスペンス・秘匿と一挙開示・階段状エスカレーション・振幅拡大の振り子・断崖・カタルシス集中・認知負荷の波乗り・希望の明滅 等、波形設計を主眼とするプリセット（合成時の波形ドナー、診断時の目標曲線として利用）。 |
+| P9-04 | 品質基準は §10 と同一に加え、整合性監査（`audit_structure`）の指摘0件、同カテゴリ内の緊張波形相関 < 0.97、既存60件との相関 < 0.985。 |
+| P9-05 | `SEED_FILES` を6エントリへ拡張し合計100件。既存DBは `seed_database(overwrite=False)` で不足分のみ追加される（`run_studio.py` 起動時・UI の「未投入分を投入」）。 |
+
+新カテゴリ値: `StructureCategory.ADVANCED_NARRATIVE="advanced_narrative"`, `MANGA_DIRECTION="manga_direction"`, `EMOTIONAL_WAVE="emotional_wave"`（表示名は `STRUCTURE_CATEGORY_LABELS_JA`）。
+
+---
+
+## 15. Phase 10 — ネーム構造ドクター（Storyboard Diagnostics Engine）
+
+### 15.1 要件
+| ID | 要件 |
+|---|---|
+| P10-01 | 入力3経路: 保存済み/編集済み `Storyboard`、既存原稿の `PageAnnotation`（コマ枠・フキダシ・台詞・ショット等を記述した JSON）、ページ画像（PNG。UI は任意形式をブラウザで PNG 化して送信）。 |
+| P10-02 | 逆解析: コマ面積比・縦横比・傾き・断ち切り/ぶち抜き、読み順（再帰XYカット）と視線遷移（逆行・交差・Z字適合率・経路長・読み順の曖昧さ）、フキダシ読み順、台詞文字数・フキダシ被覆率・ページ情報密度、ベタ比率、視覚的手がかりからの推定劇的強度、目標構造（任意）の緊張曲線との相関/DTW。 |
+| P10-03 | 5軸採点（視線誘導・感情の緩急・情報密度・コマ割りリズム・めくり効果、各0〜100、重み付き総合点と評語 S/A/B/C/D）、ページ別スコア。 |
+| P10-04 | 所見（severity: critical/major/minor/info、観測値と目標値、オーバーレイ用ピン座標）と処方箋（12種の修正演算子）。各処方は複製ネームへ実際に適用して再採点する反実仮想シミュレーションで期待改善量を算出し、改善量順に提示。Storyboard 系入力には処方を自動適用できる。 |
+| P10-05 | 画像逆解析: 大津法二値化、外周連結の背景（余白＋ガター）除去による連結成分コマ検出（斜めゴマ対応）、コマ内の閉じた白領域によるフキダシ検出と文字数推定、コマ別ベタ比率。外部画像ライブラリ不使用（PNG デコーダ/エンコーダを自前実装）。 |
+| P10-06 | 診断オーバーレイ SVG（推定強度ヒート・視線経路（逆行は赤）・所見ピン・フキダシ読み順）、編集者コメント（決定論ベースライン＋ LLM 増幅 task `manga.diagnosis_commentary`）。 |
+| P10-07 | Web Studio: Manga Studio に「ネーム構造ドクター」タブ（入力選択・画像アップロードと検出確認・目標構造選択・総合/5軸/ページ別スコア・推定強度と目標曲線・オーバーレイ・所見一覧・期待改善量順の処方と適用・編集者コメント・レポート出力）。 |
+
+### 15.2 契約
+```python
+# diagnostics_schemas.py（共有契約・作成済み）: DiagnosticAxis, AXIS_LABELS_JA, DEFAULT_AXIS_WEIGHTS, DiagnosticSourceType,
+#   SEVERITY_ORDER, PrescriptionOperation(12種), PRESCRIPTION_LABELS_JA, AnnotatedBalloon/AnnotatedPanel/AnnotatedPage/PageAnnotation,
+#   DetectedBalloon/DetectedPanel/PageDetection/ImageDetectionResult, PanelMetrics, PageMetrics, AxisScore, DiagnosticFinding,
+#   Prescription, IntensityCurve, DiagnosisCommentary, DiagnosticReport, grade_for
+# diagnostics.py
+class DiagnosticsConfig(BaseModel): max_chars_per_balloon=40, comfortable_chars_per_page=(30, 220), overloaded_chars_per_page=320,
+    axis_weights=DEFAULT_AXIS_WEIGHTS, simulate_prescriptions=True, max_prescriptions=12, use_llm_commentary=False
+class StoryboardDiagnosticsEngine:
+    def __init__(self, config: DiagnosticsConfig | None = None, llm_client: LLMClient | None = None)
+    def diagnose(self, storyboard: Storyboard, *, target: UniversalStructure | EmotionalInformationWave | None = None,
+                 source_type: DiagnosticSourceType = STORYBOARD, source_id: str | None = None, title: str | None = None) -> DiagnosticReport
+    def diagnose_annotation(self, annotation: PageAnnotation, *, target=None, source_type=ANNOTATION, source_id=None) -> DiagnosticReport
+    async def diagnose_async(self, storyboard, **kwargs) -> DiagnosticReport          # LLM 編集者コメント付き
+    async def diagnose_annotation_async(self, annotation, **kwargs) -> DiagnosticReport
+    def score(self, storyboard, *, target=None) -> tuple[float, list[AxisScore]]      # 高速採点（シミュレーション用）
+    def apply_prescriptions(self, storyboard: Storyboard, report: DiagnosticReport, prescription_ids: list[str],
+                            *, target=None) -> tuple[Storyboard, DiagnosticReport]
+def annotation_to_storyboard(annotation: PageAnnotation) -> Storyboard
+def storyboard_to_annotation(storyboard: Storyboard) -> PageAnnotation
+# diagnostics_overlay.py
+class DiagnosticOverlayOptions(BaseModel): show_heat=True, show_gaze=True, show_pins=True, show_balloon_order=True, show_image=True
+def render_diagnostic_overlay(report: DiagnosticReport, page_index: int, options: DiagnosticOverlayOptions | None = None) -> str
+# png_codec.py
+def decode_png(data: bytes) -> np.ndarray      # float32 グレースケール [0,1]（白=1）。8/16bit, gray/gray+α/RGB/RGBA/palette, 全フィルタ型
+def encode_png_gray(image: np.ndarray) -> bytes
+def decode_data_url(data: str) -> bytes        # "data:image/png;base64,..." または素の base64
+# page_vision.py
+class VisionConfig(BaseModel): analysis_long_side=520, min_panel_area_ratio=0.01, min_balloon_area_ratio=0.004, page_width=1000.0
+class PageVisionAnalyzer:
+    def __init__(self, config: VisionConfig | None = None)
+    def detect(self, image: np.ndarray, *, page_index: int = 0) -> PageDetection
+    def detect_png(self, data: bytes, *, page_index: int = 0) -> PageDetection
+    def to_annotation(self, detections: list[PageDetection], *, title: str = "画像から逆解析した原稿", first_page_side=PageSide.RIGHT) -> PageAnnotation
+    def analyze_images(self, images: list[bytes], *, first_page_side=PageSide.RIGHT, title: str | None = None) -> ImageDetectionResult
+def otsu_threshold(gray: np.ndarray) -> float
+def label_components(mask: np.ndarray) -> tuple[np.ndarray, int]
+def synthesize_page_image(*, seed: int = 0, variant: str = "standard", width: int = 700, height: int = 990) -> tuple[np.ndarray, PageAnnotation]
+```
+
+### 15.3 API（`/api/manga/diagnostics`）
+| メソッド | パス | 概要 |
+|---|---|---|
+| POST | `/api/manga/diagnostics` | 診断実行（{storyboard_id | storyboard | annotation | images[], first_page_side, target_structure_id, use_llm, simulate, max_prescriptions, title, async}）→ DiagnosticReport（保存） |
+| GET | `/api/manga/diagnostics` | 診断履歴（要約） |
+| GET/DELETE | `/api/manga/diagnostics/{id}` | 取得・削除 |
+| GET | `/api/manga/diagnostics/{id}/pages/{page_index}/svg` | 診断オーバーレイ SVG（heat, gaze, pins, order, image クエリ） |
+| POST | `/api/manga/diagnostics/{id}/apply` | 処方適用（{prescription_ids, save_storyboard}）→ {storyboard, report, score_before, score_after, saved_storyboard_id} |
+| POST | `/api/manga/diagnostics/detect` | 画像からのコマ・フキダシ検出（{images[], first_page_side, title}）→ ImageDetectionResult |
+| GET | `/api/manga/diagnostics/sample-image.png` | 検証用の合成原稿画像（seed, variant クエリ） |
+| GET | `/api/manga/storyboards/{id}/diagnostics` | 保存済みネームを元構造を目標として診断 |

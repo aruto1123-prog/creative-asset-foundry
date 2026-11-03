@@ -98,6 +98,26 @@
 - [x] `docs/ARCHITECTURE.md`
 - [x] 最終コミット
 
+## Phase 9：初期プリセット拡張（60 → 100パターン）
+- [x] 新カテゴリ（advanced_narrative / manga_direction / emotional_wave）のスキーマ追加
+- [ ] `advanced_narrative_structures.json`（14）＋著作スクリプト
+- [ ] `advanced_manga_direction_patterns.json`（13）＋著作スクリプト
+- [ ] `emotional_wave_presets.json`（13）＋著作スクリプト
+- [ ] ローダー6ファイル化・合計100件・監査指摘0件・波形の相互独立性
+- [ ] `tests/test_seeds.py` を100件対応に拡張し全件パス
+
+## Phase 10：ネーム構造ドクター（Storyboard Diagnostics Engine）
+- [x] 共有スキーマ `diagnostics_schemas.py`
+- [ ] 逆解析・5軸採点・所見・反実仮想シミュレーション付き処方箋 `diagnostics.py`
+- [ ] アノテーション⇔ネーム変換、処方の自動適用、編集者コメント（決定論＋LLM増幅）
+- [ ] 診断オーバーレイ SVG `diagnostics_overlay.py`
+- [ ] PNG コーデック `png_codec.py` と画像逆解析 `page_vision.py`（大津法・連結成分・フキダシ検出）
+- [ ] `tests/test_storyboard_diagnostics.py` / `tests/test_page_vision.py` 全件パス
+- [ ] バックエンド API（診断・履歴・オーバーレイ・適用・検出・合成画像）と `tests/test_backend_diagnostics.py`
+- [ ] Web Studio「ネーム構造ドクター」タブ（画像アップロード・処方適用を含む）
+- [ ] `npx tsc --noEmit` / `npm run build` / UI スモーク（診断タブを含む）
+- [ ] E2E にドクター工程を追加、ドキュメント（SPEC / MASTER_GUIDE / README）更新
+
 ## 最終検証記録
 
 | 検証 | 結果 |

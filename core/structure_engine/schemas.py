@@ -61,6 +61,7 @@ __all__ = [
     "BlueprintSlot",
     "DomainAgnosticBlueprint",
     "StructureCategory",
+    "STRUCTURE_CATEGORY_LABELS_JA",
     "SourceKind",
     "StructureMetadata",
     "PanelRhythmProfile",
@@ -884,7 +885,21 @@ class StructureCategory(str, Enum):
     NARRATIVE_ARCHETYPE = "narrative_archetype"
     MANGA_PANEL_RHYTHM = "manga_panel_rhythm"
     PERSUASION_MARKETING = "persuasion_marketing"
+    ADVANCED_NARRATIVE = "advanced_narrative"
+    MANGA_DIRECTION = "manga_direction"
+    EMOTIONAL_WAVE = "emotional_wave"
     CUSTOM = "custom"
+
+
+STRUCTURE_CATEGORY_LABELS_JA: dict[str, str] = {
+    StructureCategory.NARRATIVE_ARCHETYPE.value: "物語原型",
+    StructureCategory.MANGA_PANEL_RHYTHM.value: "漫画リズム",
+    StructureCategory.PERSUASION_MARKETING.value: "説得・マーケティング",
+    StructureCategory.ADVANCED_NARRATIVE.value: "高度な物語構造",
+    StructureCategory.MANGA_DIRECTION.value: "漫画演出",
+    StructureCategory.EMOTIONAL_WAVE.value: "感情波形プリセット",
+    StructureCategory.CUSTOM.value: "カスタム",
+}
 
 
 class SourceKind(str, Enum):
