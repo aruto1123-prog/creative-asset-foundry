@@ -127,7 +127,14 @@ export interface DomainAgnosticBlueprint {
   invariants: string[];
 }
 
-export type StructureCategory = "narrative_archetype" | "manga_panel_rhythm" | "persuasion_marketing" | "custom";
+export type StructureCategory =
+  | "narrative_archetype"
+  | "manga_panel_rhythm"
+  | "persuasion_marketing"
+  | "advanced_narrative"
+  | "manga_direction"
+  | "emotional_wave"
+  | "custom";
 export type SourceKind = "seed" | "extracted" | "merged" | "mutated" | "manual";
 
 export interface StructureMetadata {
@@ -1212,4 +1219,242 @@ export interface JobEvent {
   progress: number;
   stage: string;
   message: string;
+}
+
+// ---------------------------------------------------------------------------
+// ネーム構造ドクター（Storyboard Diagnostics Engine）— core/manga_pipeline/diagnostics_schemas.py に対応
+// ---------------------------------------------------------------------------
+
+export type DiagnosticAxis = "gaze_flow" | "emotional_dynamics" | "information_density" | "panel_rhythm" | "page_turn";
+export type DiagnosticSourceType = "storyboard" | "annotation" | "image";
+export type DiagnosticSeverity = "critical" | "major" | "minor" | "info";
+export type DiagnosticGrade = "S" | "A" | "B" | "C" | "D";
+export type PrescriptionOperation =
+  | "enlarge_panel"
+  | "convert_to_splash"
+  | "move_peak_to_reveal"
+  | "strengthen_hook"
+  | "insert_pause"
+  | "vary_shot"
+  | "split_balloon"
+  | "move_balloon"
+  | "reorder_panels"
+  | "rebalance_density"
+  | "add_contrast"
+  | "add_slant";
+
+/** (x0, y0, x1, y1) のページ座標矩形。 */
+export type BBox = [number, number, number, number];
+
+export interface AnnotatedBalloon {
+  text: string;
+  char_count?: number | null;
+  bbox: BBox;
+  kind?: BalloonKind;
+  speaker?: string | null;
+  order_hint?: number | null;
+}
+
+export interface AnnotatedPanel {
+  bbox?: BBox | null;
+  polygon?: Point[] | null;
+  balloons: AnnotatedBalloon[];
+  shot?: ShotSize | null;
+  angle?: CameraAngle | null;
+  character_count?: number;
+  ink_ratio?: number | null;
+  sfx_count?: number;
+  is_silent?: boolean | null;
+  bleed_sides?: Array<"top" | "bottom" | "left" | "right">;
+  breakout?: boolean;
+  intensity_hint?: number | null;
+  note?: string;
+}
+
+export interface AnnotatedPage {
+  width: number;
+  height: number;
+  side?: PageSide | null;
+  panels: AnnotatedPanel[];
+  reading_order?: number[] | null;
+}
+
+export interface PageAnnotation {
+  title: string;
+  first_page_side: PageSide;
+  pages: AnnotatedPage[];
+  notes?: string;
+}
+
+export interface DetectedBalloon {
+  bbox: BBox;
+  area_ratio: number;
+  fill_ratio: number;
+  estimated_chars: number;
+  confidence: number;
+}
+
+export interface DetectedPanel {
+  bbox: BBox;
+  polygon: Point[];
+  area_ratio: number;
+  ink_ratio: number;
+  slant_deg: number;
+  confidence: number;
+  balloons: DetectedBalloon[];
+}
+
+export interface PageDetection {
+  page_index: number;
+  width: number;
+  height: number;
+  image_width: number;
+  image_height: number;
+  threshold: number;
+  panels: DetectedPanel[];
+  warnings: string[];
+}
+
+export interface ImageDetectionResult {
+  pages: PageDetection[];
+  annotation: PageAnnotation;
+}
+
+export interface PanelMetrics {
+  panel_id: string;
+  page_index: number;
+  index_in_page: number;
+  reading_order: number;
+  area_ratio: number;
+  aspect: number;
+  slant_deg: number;
+  is_bleed: boolean;
+  is_breakout: boolean;
+  is_silent: boolean;
+  shot: string | null;
+  angle: string | null;
+  char_count: number;
+  balloon_count: number;
+  balloon_coverage: number;
+  ink_ratio: number;
+  intensity: number;
+  target_tension: number | null;
+  t: number;
+}
+
+export interface PageMetrics {
+  page_index: number;
+  side: string;
+  page_turn_role: string;
+  panel_count: number;
+  char_count: number;
+  balloon_count: number;
+  information_density: number;
+  density_level: "sparse" | "balanced" | "dense" | "overloaded";
+  area_cv: number;
+  max_area_ratio: number;
+  mean_intensity: number;
+  peak_intensity: number;
+  gaze_path_length: number;
+  backtracks: number;
+  crossings: number;
+  z_flow_conformity: number;
+  order_ambiguity: number;
+  reveal_strength: number | null;
+  hook_strength: number | null;
+  score: number;
+}
+
+export interface AxisScore {
+  axis: DiagnosticAxis;
+  label: string;
+  score: number;
+  weight: number;
+  metrics: Record<string, number>;
+  summary: string;
+}
+
+export interface DiagnosticFinding {
+  id: string;
+  axis: DiagnosticAxis;
+  severity: DiagnosticSeverity;
+  code: string;
+  page_index: number | null;
+  panel_ids: string[];
+  balloon_ids: string[];
+  title: string;
+  detail: string;
+  metric: string;
+  observed: number;
+  target: number;
+  anchor: Point | null;
+}
+
+export interface Prescription {
+  id: string;
+  operation: PrescriptionOperation;
+  axis: DiagnosticAxis;
+  finding_ids: string[];
+  page_index: number | null;
+  panel_ids: string[];
+  balloon_ids: string[];
+  title: string;
+  instruction: string;
+  expected_gain: number;
+  axis_gains: Record<string, number>;
+  simulated: boolean;
+  applicable: boolean;
+  params: Record<string, unknown>;
+  rank: number;
+}
+
+export interface IntensityCurve {
+  t: number[];
+  inferred: number[];
+  target: number[] | null;
+  correlation: number | null;
+  dtw_distance: number | null;
+  panel_ids: string[];
+}
+
+export interface DiagnosticReport {
+  id: string;
+  title: string;
+  source_type: DiagnosticSourceType;
+  source_id: string | null;
+  target_structure_id: string | null;
+  overall_score: number;
+  grade: DiagnosticGrade;
+  axes: AxisScore[];
+  pages: PageMetrics[];
+  panels: PanelMetrics[];
+  findings: DiagnosticFinding[];
+  prescriptions: Prescription[];
+  intensity_curve: IntensityCurve;
+  commentary: string;
+  used_llm: boolean;
+  storyboard: Storyboard | null;
+  page_images: string[];
+  created_at: string;
+}
+
+export interface DiagnosticSummary {
+  id: string;
+  title: string;
+  source_type: DiagnosticSourceType;
+  source_id: string | null;
+  overall_score: number;
+  grade: DiagnosticGrade;
+  page_count: number;
+  findings: number;
+  prescriptions: number;
+  created_at: string;
+}
+
+export interface DiagnosticApplyResponse {
+  storyboard: Storyboard;
+  report: DiagnosticReport;
+  score_before: number;
+  score_after: number;
+  saved_storyboard_id: string | null;
 }

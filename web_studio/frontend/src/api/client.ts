@@ -18,6 +18,9 @@ import type {
   ContentPlan,
   DatasetAnalyzeResponse,
   DbStats,
+  DiagnosticApplyResponse,
+  DiagnosticReport,
+  DiagnosticSummary,
   EmotionalInformationWave,
   ExtractionResult,
   GrammarReport,
@@ -25,12 +28,15 @@ import type {
   GridDetail,
   GridExperiment,
   Health,
+  ImageDetectionResult,
   Job,
   JobRef,
   LoRASpec,
   MergeResponse,
   MermaidResponse,
   ModelArchitecture,
+  PageAnnotation,
+  PageSide,
   MutateResponse,
   MutationInfo,
   ParameterSpace,
@@ -377,6 +383,27 @@ export interface ComfyCompileRequest {
   panel_ids?: string[] | null;
 }
 
+export interface DiagnosticRequest {
+  storyboard_id?: string;
+  storyboard?: Storyboard;
+  annotation?: PageAnnotation;
+  images?: string[];
+  first_page_side?: PageSide;
+  target_structure_id?: string | null;
+  use_llm?: boolean;
+  simulate?: boolean;
+  max_prescriptions?: number;
+  title?: string;
+}
+
+export interface DiagnosticOverlayQuery {
+  heat: boolean;
+  gaze: boolean;
+  pins: boolean;
+  order: boolean;
+  image: boolean;
+}
+
 export interface MatrixRequest {
   structure_id?: string;
   research_log?: ResearchLog;
@@ -498,6 +525,27 @@ export const api = {
     compileComfy: (id: string, body: ComfyCompileRequest) => post<ComfyCompileResponse>(`/api/manga/storyboards/${enc(id)}/comfy`, body),
     queueComfy: (id: string, body: ComfyCompileRequest, onUpdate?: (job: Job) => void) =>
       runJob<Record<string, unknown>>(`/api/manga/storyboards/${enc(id)}/comfy/queue`, { ...body }, onUpdate),
+  },
+  diagnostics: {
+    run: (body: DiagnosticRequest, onUpdate?: (job: Job) => void) =>
+      runJob<DiagnosticReport>("/api/manga/diagnostics", { ...body }, onUpdate),
+    list: async () => asList<DiagnosticSummary>(await get<unknown>("/api/manga/diagnostics"), ["diagnostics", "reports"]),
+    get: (id: string) => get<DiagnosticReport>(`/api/manga/diagnostics/${enc(id)}`),
+    remove: (id: string) => del<unknown>(`/api/manga/diagnostics/${enc(id)}`),
+    overlaySvgUrl: (id: string, page: number, options: DiagnosticOverlayQuery) =>
+      `/api/manga/diagnostics/${enc(id)}/pages/${page}/svg${buildQuery({
+        heat: options.heat,
+        gaze: options.gaze,
+        pins: options.pins,
+        order: options.order,
+        image: options.image,
+      })}`,
+    apply: (id: string, body: { prescription_ids: string[]; save_storyboard: boolean }) =>
+      post<DiagnosticApplyResponse>(`/api/manga/diagnostics/${enc(id)}/apply`, body),
+    detect: (body: { images: string[]; first_page_side: PageSide; title?: string }) =>
+      post<ImageDetectionResult>("/api/manga/diagnostics/detect", body),
+    sampleImageUrl: (seed: number, variant: string) => `/api/manga/diagnostics/sample-image.png${buildQuery({ seed, variant })}`,
+    forStoryboard: (id: string) => get<DiagnosticReport>(`/api/manga/storyboards/${enc(id)}/diagnostics`),
   },
   publisher: {
     matrix: (body: MatrixRequest) => post<ContentMatrix>("/api/publisher/matrix", body),
