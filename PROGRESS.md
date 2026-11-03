@@ -49,15 +49,15 @@
 - [x] `tests/test_style_alchemy.py` 全件パス
 
 ## Phase 4：構造駆動型・漫画ネーム＆ComfyUI生成パイプライン（`core/manga_pipeline/`）
-- [ ] 漫画演出スキーマ `schemas.py`（ページ幾何・コマポリゴン・カメラ・フキダシ・オノマトペ・見開き）
-- [ ] 幾何・視線誘導（再帰XYカット読み順、視線ベクトル、逆行・交差判定）
-- [ ] 縦書き文節改行＋禁則処理
-- [ ] 構造駆動ネーム生成 `storyboard_generator.py`（ページ割り→コマ割り→カメラ→セリフ）
-- [ ] Manga Grammar Validator＋自動修正ループ
-- [ ] ComfyUIコンパイラ `comfy_compiler.py`（領域マスク・ControlNet・シード管理）
-- [ ] ComfyUIクライアント `comfy_client.py`（非同期キュー・WebSocket進捗）＋ `comfy_mock_server.py`
-- [ ] SVGレンダラー `layout_renderer.py`（断ち切り・フキダシ・縦書き・視線矢印・レイヤーJSON）
-- [ ] `tests/test_manga_pipeline.py` 全件パス
+- [x] 漫画演出スキーマ `schemas.py`（ページ幾何・コマポリゴン・カメラ・フキダシ・オノマトペ・見開き）
+- [x] 幾何・視線誘導（再帰XYカット読み順、視線ベクトル、逆行・交差判定）
+- [x] 縦書き文節改行＋禁則処理
+- [x] 構造駆動ネーム生成 `storyboard_generator.py`（ページ割り→コマ割り→カメラ→セリフ）
+- [x] Manga Grammar Validator＋自動修正ループ
+- [x] ComfyUIコンパイラ `comfy_compiler.py`（領域マスク・ControlNet・シード管理）
+- [x] ComfyUIクライアント `comfy_client.py`（非同期キュー・WebSocket進捗）＋ `comfy_mock_server.py`
+- [x] SVGレンダラー `layout_renderer.py`（断ち切り・フキダシ・縦書き・視線矢印・レイヤーJSON）
+- [x] `tests/test_manga_pipeline.py` 全件パス
 
 ## Phase 5：R&D知見の自動体系化・マルチチャネル資産変換器（`core/asset_publisher/`）
 - [x] スキーマ `schemas.py`
@@ -89,7 +89,7 @@
 - [ ] Workspace 5 System & Local AI Config
 
 ## Phase 8：結合・E2E・ビルド検証・ドキュメント
-- [ ] `tests/test_e2e_foundry.py`（一気通貫E2E）全件パス
+- [x] `tests/test_e2e_foundry.py`（一気通貫E2E）全件パス
 - [ ] `pytest` 全件グリーン
 - [ ] `npx tsc --noEmit` エラー0件
 - [ ] `npm run build` 成功
