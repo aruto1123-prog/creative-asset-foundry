@@ -12,21 +12,21 @@
 - [x] git 初期化・Phase 0 コミット
 
 ## Phase 1：ローカルDeepSeek-V4.1-Flash 多段階推論基盤（`core/llm_client/`）
-- [ ] 型定義（ChatMessage / LLMRequest / LLMResponse / TokenUsage / StructuredResult）と例外階層
-- [ ] JSON抽出・修復（`<think>`除去、フェンス抽出、末尾カンマ・コメント・単引用・未引用キー・途中切断の修復）
-- [ ] OpenAI互換アダプタ（`http://localhost:8000/v1`、json_schema/json_object、reasoning_content、再試行）
-- [ ] Ollamaアダプタ（`http://localhost:11434/v1`、`/api/tags` ヘルスチェック）
-- [ ] AutoFallbackアダプタ（実機→モック自動切替）
-- [ ] 高精度モックLLMアダプタ（タスク別ハンドラ登録・JSON Schema合成器・障害注入・決定論性）
-- [ ] テレメトリ（トークン・レイテンシ・思考ログのSQLite記録、統計）
-- [ ] LLMClient（構造化生成＋自己修復リトライ）
-- [ ] 4段階ハーネス（Decompose → Synthesize → Critique → Refine、post_validate追加精錬）
-- [ ] DeepSeek向け長文システムプロンプト群
-- [ ] ファクトリ／DI（mock / openai_compatible / ollama / auto、環境変数上書き）
-- [ ] `tests/test_llm_client.py` 全件パス
+- [x] 型定義（ChatMessage / LLMRequest / LLMResponse / TokenUsage / StructuredResult）と例外階層
+- [x] JSON抽出・修復（`<think>`除去、フェンス抽出、末尾カンマ・コメント・単引用・未引用キー・途中切断の修復）
+- [x] OpenAI互換アダプタ（`http://localhost:8000/v1`、json_schema/json_object、reasoning_content、再試行）
+- [x] Ollamaアダプタ（`http://localhost:11434/v1`、`/api/tags` ヘルスチェック）
+- [x] AutoFallbackアダプタ（実機→モック自動切替）
+- [x] 高精度モックLLMアダプタ（タスク別ハンドラ登録・JSON Schema合成器・障害注入・決定論性）
+- [x] テレメトリ（トークン・レイテンシ・思考ログのSQLite記録、統計）
+- [x] LLMClient（構造化生成＋自己修復リトライ）
+- [x] 4段階ハーネス（Decompose → Synthesize → Critique → Refine、post_validate追加精錬）
+- [x] DeepSeek向け長文システムプロンプト群
+- [x] ファクトリ／DI（mock / openai_compatible / ollama / auto、環境変数上書き）
+- [x] `tests/test_llm_client.py` 全件パス
 
 ## Phase 2：普遍的構造抽出＆異分野転用エンジン（`core/structure_engine/`）
-- [ ] 5階層オントロジー `schemas.py`（L1 力学グラフ / L2 感情・情報波形 / L3 ビート / L4 認知メカニズム / L5 ブループリント）
+- [x] 5階層オントロジー `schemas.py`（L1 力学グラフ / L2 感情・情報波形 / L3 ビート / L4 認知メカニズム / L5 ブループリント）
 - [ ] 脱フレーバー抽出器 `extractor.py`（固有名詞・装飾除去、ヒューリスティック逆コンパイル、漏洩再走査）
 - [ ] 構造主義物語論に基づくDeepSeek用システムプロンプト群 `prompts.py`
 - [ ] 構造整合性監査 `consistency.py`
@@ -39,8 +39,8 @@
 - [ ] `tests/test_structure_engine.py` 全件パス
 
 ## Phase 3：極限絵柄開発・モデル調合＆LoRA研究ラボ（`core/style_alchemy/`）
-- [ ] 共有スキーマ `schemas.py`（アーキテクチャ別ブロック定義・StyleRecipe）
-- [ ] ComfyUIグラフ基盤 `comfy_export.py`（モデルスタック・txt2img）
+- [x] 共有スキーマ `schemas.py`（アーキテクチャ別ブロック定義・StyleRecipe）
+- [x] ComfyUIグラフ基盤 `comfy_export.py`（モデルスタック・txt2img）
 - [ ] 選好学習 `preference_engine.py`（Elo・Bradley-Terry MM・リッジ/ロジスティック・重要度・CI・能動学習ペア）
 - [ ] 最適化 `model_optimizer.py`（パラメータ空間・GP・EI/UCB/PI・CMA-ES・GA・提案・エクスポーター）
 - [ ] データセット精製 `dataset_curator.py`（クレンジング・共起/NPMI/エントロピー・癒着検出・ギャップ分析・LLM連携）
