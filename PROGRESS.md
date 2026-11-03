@@ -90,10 +90,23 @@
 
 ## Phase 8：結合・E2E・ビルド検証・ドキュメント
 - [x] `tests/test_e2e_foundry.py`（一気通貫E2E）全件パス
-- [ ] `pytest` 全件グリーン
+- [x] `pytest` 全件グリーン
 - [x] `npx tsc --noEmit` エラー0件
 - [x] `npm run build` 成功
 - [x] `run_studio.py`（ワンコマンド起動）
-- [ ] `docs/MASTER_GUIDE.md`（数理解説・接続手順・運用ワークフロー）
+- [x] `docs/MASTER_GUIDE.md`（数理解説・接続手順・運用ワークフロー）
 - [x] `docs/ARCHITECTURE.md`
-- [ ] 最終コミット
+- [x] 最終コミット
+
+## 最終検証記録
+
+| 検証 | 結果 |
+|---|---|
+| `python -m pytest` | 588 件すべてパス（約21秒・外部ネットワーク不要） |
+| 内訳 | asset_publisher 144 / llm_client 89 / quality_gates 83 / structure_engine 82 / seeds 66 / manga_pipeline 63 / style_alchemy 44 / backend_api 16 / e2e 1 |
+| `npx tsc --noEmit` | エラー 0 件 |
+| `npm run build` | 成功 |
+| UI スモーク（`run_studio.py` 起動 → Playwright で5ワークスペース17操作） | コンソールエラー 0 件 |
+| シード | 60 件すべてスキーマ完全準拠・整合性監査の指摘 0 件 |
+| ネーム生成 | シード60件×5ページ数を含む全検証ケースで漫画文法バリデータ合格 |
+| Python 3.10 互換性 | 全ソースで文法・f-string・標準ライブラリAPIの検査に合格 |

@@ -82,7 +82,7 @@ sequenceDiagram
     U->>R: python run_studio.py [オプション]
     R->>R: Python バージョン・依存パッケージ検査（--install-deps で自動導入）
     R->>R: CLI 引数を環境変数（CAF_*）へ反映
-    R->>C: FoundrySettings.load()・データディレクトリ作成・config.json 初期保存
+    R->>C: FoundrySettings.load()・データディレクトリ作成・config.json が無ければ既定値のみで初期保存
     R->>C: Database 初期化 → StructureRepository → seed_database（既存IDはスキップ）
     alt --dev
         R->>F: npm run dev（Vite 開発サーバ :5173）
@@ -117,7 +117,7 @@ sequenceDiagram
 | `--no-browser` | 無効 | ブラウザを自動で開かない |
 | `--log-level` | `info` | uvicorn のログレベル（critical/error/warning/info/debug） |
 
-DB 初期化とシード投入だけを行う例:
+DB 初期化とシード投入だけを行う例（`config.json` が無ければ既定値のみで作成される）:
 
 ```bash
 python run_studio.py --init-only --data-dir ./data
@@ -131,7 +131,7 @@ python run_studio.py --provider mock --comfy-mock
 
 ### 1.6 環境変数
 
-設定の優先順位は **環境変数 > `<data_dir>/config.json` > 既定値**。`run_studio.py` の CLI 引数は環境変数へ変換されて反映される。
+設定の優先順位は **環境変数 > `<data_dir>/config.json` > 既定値**。`run_studio.py` の CLI 引数は環境変数へ変換されて反映される。CLI 引数・環境変数による上書きはその起動中だけの一時的なもので、`config.json` には書き込まれない（恒久的に変えたい値は System 画面で保存する）。
 
 | 環境変数 | 対応する設定 | 説明 |
 |---|---|---|
@@ -151,12 +151,12 @@ Ollama 側のモデル名（`llm.ollama_model`、既定 `deepseek-v4.1-flash`）
 ```
 data/
 ├── foundry.sqlite3        # 全永続データ（WAL モード。-wal / -shm ファイルが併存する）
-├── config.json            # System 画面で保存した設定（data_dir 自体は含まない）
+├── config.json            # 初回起動時（--init-only を含む）に既定値のみで作成。以後は System 画面の保存で更新（data_dir 自体は含まない）
 ├── backups/               # バックアップ（foundry_YYYYmmdd_HHMMSS.sqlite3）
 └── exports/               # エクスポート出力
 ```
 
-`config.json` の例（実際の値は System 画面から保存される）:
+`config.json` の例。初回起動時（`--init-only` を含む）、`config.json` が存在しなければ **既定値のみ** で作成される（`--provider` や `--llm-url`、`CAF_*` 環境変数による一時的な上書きは書き込まれない）。以後の値は System 画面での保存によって永続化される:
 
 ```json
 {
@@ -212,6 +212,8 @@ curl -X POST http://127.0.0.1:8765/api/system/db/backup
 ```
 
 `data/backups/foundry_YYYYmmdd_HHMMSS.sqlite3` が作成される。一覧は `GET /api/system/db/backups`。
+
+`config.json` は DB バックアップに含まれないため、設定も保全したい場合は `data/config.json` を別途コピーしておく。
 
 **復元**: サーバを停止してから、`data/foundry.sqlite3` とその `-wal` / `-shm` を退避し、バックアップファイルを `data/foundry.sqlite3` としてコピーして再起動する（WAL ファイルを残したまま差し替えると不整合の原因になる）。
 
@@ -336,12 +338,15 @@ ollama serve
 
 ### 2.8 System 画面での設定と接続テスト
 
-Workspace 5「System & Local AI Config」で次を行う。
+サイドバーの「System & Local AI」（Workspace 5、URL ハッシュ `#system`）で次を行う。画面上部のステータスバーには常に `LLM`（実効プロバイダ・モデル名。フォールバック中は「モックへフォールバック中」バッジ）、`ComfyUI`（接続先 URL または「内蔵モック」）、`構造DB`（件数とシード件数）、WebSocket 接続状態（「WebSocket 接続中」／「WebSocket 再接続中」）と「更新」ボタンが表示される。
 
-1. プロバイダ・エンドポイント URL・モデル名・API キー・構造化出力モード・タイムアウトを入力して保存（`PUT /api/system/config`）。API キーはマスク表示され、マスク値のまま保存した場合は既存値が保持される。
-2. 「LLM 接続テスト」（`POST /api/system/llm/test`）で到達性・モデル一覧・所要時間を確認。
-3. 思考段階設定（次節）を調整して保存。
-4. テレメトリ表で、タスク（例 `structure.extract`）・段（decompose/synthesize/critique/refine）ごとの呼び出し数・成功率・平均レイテンシ・トークン数を確認。
+1. **「ローカル LLM（DeepSeek-V4.1-Flash）」カード**: 「プロバイダ」「OpenAI 互換エンドポイント URL」「モデル名（OpenAI 互換）」「Ollama エンドポイント URL」「モデル名（Ollama）」「API キー」「構造化出力モード」「最大トークン数」「タイムアウト（秒）」「既定 temperature」を入力して「保存」（`PUT /api/system/config`）。保存すると LLM クライアントが再構築される。API キーはマスク表示され、マスク表示のまま保存すると既存のキーが保持される。
+2. 同カードの「接続テスト」（`POST /api/system/llm/test`）で到達性・モデル一覧・所要時間を確認する。auto でモックに切り替わっている場合は「フォールバック中」バッジが付く。
+3. **「思考段階設定（Multi-Stage Reasoning Harness）」**: 「Step 1 Decompose」「Step 2 Synthesize（常時）」「Step 3 Critique」「Step 4 Refine」の ON/OFF、「合格時は Refine を省略」、「批評の合格基準点」「自己修復リトライ回数」「追加精錬ラウンド上限」を設定して「保存」（意味は次節 2.9。段ごとの temperature は `config.json` の `stage_temperatures` で調整する）。
+4. **「ComfyUI」カード**: 「エンドポイント URL」「出力ファイル接頭辞」と「内蔵モック ComfyUI を使う（実機なしで投入・進捗監視を検証）」を設定し、「接続テスト」（`POST /api/system/comfy/test`）と「保存」。
+5. **「SQLite データベース」**: 「ファイルサイズ（WAL 含む）」「テーブル数」とテーブル別件数を「更新」で再取得、「バックアップ作成」（`POST /api/system/db/backup`）とバックアップ一覧（`GET /api/system/db/backups`）。
+6. **「初期シード（普遍的構造データベース）」**: 「シード構造数」を確認し、「未投入分を投入」（既存IDはスキップ）または「上書き再投入」（`POST /api/seeds/load`）。
+7. **「推論テレメトリ」**: 「呼び出し」「成功率」「入力トークン」「出力トークン」「思考トークン」「平均レイテンシ」の集計、「タスク×段階別統計」（例 `structure.extract` × decompose/synthesize/critique/refine）、呼び出し履歴（時刻・タスク・段階・試行・結果・入力/出力/思考・レイテンシ）、「ハーネス実行履歴」（開始・タスク・状態・批評スコア・合計レイテンシ）。構造化生成が失敗した呼び出しは結果列で識別でき、検証エラーと思考ログの確認に使う。
 
 ### 2.9 思考段階設定（4段階ハーネス）
 
@@ -1089,58 +1094,76 @@ $$
 
 ## 5. 運用ワークフロー
 
+### 5.0 画面構成
+
+左サイドバー（狭い画面では上部のタブ列）で 5 つのワークスペース「Structure Lab」「Style Alchemy Arena」「Manga Studio」「Asset Publisher」「System & Local AI」を切り替える。URL ハッシュ `#structure` `#style` `#manga` `#publisher` `#system` で各画面を直接開ける（最後に開いた画面は記憶される）。重い処理の進捗は WebSocket（`/ws/progress`）で各画面のジョブ進捗表示に反映される。
+
 ### 5.1 (a) モデル研究ループ（Style Alchemy Arena）
 
 ```mermaid
 flowchart LR
-    A[候補ブートストラップ<br/>LHS] --> B[A/B ブラインド判定<br/>←/→/↓・Space]
-    B --> C[ランキング<br/>Elo・BT]
-    C --> D[選好ベクトル解釈]
-    D --> E[ベイズ最適化提案]
+    A[候補を生成して登録<br/>LHS] --> B[ブラインド A/B 判定<br/>← / → / ↓・Space]
+    B --> C[ランキング・選好ベクトル]
+    C --> D[ベイズ最適化<br/>次のレシピを提案]
+    D --> E[レシピ／ComfyUI 出力]
     E --> F[ComfyUI で生成]
     F --> B
 ```
 
-1. **候補ブートストラップ**: Arena で アーキテクチャ（SDXL / SD1.5 / FLUX / ANIMA）、LoRA 名、グルーピング（grouped / per_block）、件数を指定して初期候補を LHS で登録する（`POST /api/style/candidates/bootstrap`）。ComfyUI 未接続でも手続き的プレビュー SVG（`/api/style/candidates/{id}/preview.svg`）が絵柄パラメータに連続的に応答するため、判定の練習と UI 確認ができる。
-2. **A/B ブラインド判定**: 次の対戦ペアは能動学習（§4.7）で選ばれる（`GET /api/style/arena/next`）。左右の画像を見て **← で左勝ち、→ で右勝ち、↓ または Space で引分**。応答時間も記録される（`POST /api/style/comparisons`）。迷ったら引分を使ってよい（BT は引分を両者 0.5 勝として扱う）。
-3. **ランキング**: Elo と BT 強度・標準誤差・勝率を確認（`GET /api/style/rankings`）。標準誤差が大きい候補はまだ判定不足。
-4. **選好ベクトルの解釈**: 棒グラフで各パラメータの標準化係数と信頼区間を見る（`GET /api/style/preference-vector`）。信頼区間が 0 を跨がない次元が「自分が無意識に好んでいる方向」。例: `style.black_fill_ratio` が prefer_higher、`merge.OUT` が prefer_lower なら「ベタ多め・出力側ブロックは A 寄り」。
-5. **ベイズ最適化提案**: 戦略（hybrid 推奨）と件数を指定して次のレシピを得る（`POST /api/style/optimizer/suggest`、`register: true` で候補として登録）。根拠欄の「感度の高い次元」が次に詰めるべき軸。
-6. **生成**: 提案レシピを `POST /api/style/recipes/export` でマージ設定・マージスクリプト・ComfyUI ワークフローとして出力し、ComfyUI で生成して候補の `image_ref` に紐づける。精密な階層マージはマージスクリプトで新しいチェックポイントを作ってから読み込む。
-7. 2〜6 を繰り返す。判定 20〜40 件ごとに選好ベクトルを見直すと収束が速い。
+Style Alchemy Arena は「A/B アリーナ」「ランキング・選好ベクトル」「ベイズ最適化」「データセット分析」「グリッド実験・トークン辞書」の 5 タブで構成される。
 
-**データセットのギャップ分析と追加撮影計画**: 自作 LoRA の学習データのキャプション（1 行 1 画像、`画像ID: タグ, タグ, …` またはタグのみ）を貼り付けて分析する（`POST /api/style/dataset/analyze`）。
+1. **候補ブートストラップ**（「A/B アリーナ」タブの「候補ブートストラップ」カード）: 「アーキテクチャ」（SDXL / SD1.5 / FLUX / ANIMA）、「LoRA 名（カンマ区切り）」、「ブロック粒度」（grouped / per_block）、「件数」、「シード」を指定して「候補を生成して登録」（`POST /api/style/candidates/bootstrap`）。パラメータ空間（ブロックマージ比率・LoRA 重み・絵柄特徴量）からラテン超方格で初期候補が作られる。ComfyUI 未接続でも手続き的プレビュー SVG（`/api/style/candidates/{id}/preview.svg`）が絵柄パラメータに連続的に応答するため、判定の練習と UI の確認ができる。
+2. **ブラインド A/B 判定**（「ブラインド A/B 判定」カード）: 対戦ペアは能動学習（§4.7）で選ばれる（`GET /api/style/arena/next`）。直感で好きな方を選ぶ。キーボードの **← で左、→ で右、↓ または Space で引分**（画面の「← 左が良い」「↓ 引分」「右が良い →」ボタンでも同じ）。判定後すぐに次の対戦が表示され、「前回の判定（ラベル開示）」で直前に比べた 2 候補のラベルが明かされる。応答時間も記録される（`POST /api/style/comparisons`）。ペアを変えたいときは「ペアを再取得」。
+3. **ランキングと選好ベクトル**（「ランキング・選好ベクトル」タブ）: 「Elo / Bradley-Terry ランキング」表（BT 強度順。Elo は判定の時系列逐次更新）を「更新」で再取得する。「美的選好ベクトル（Aesthetic Preference Vector）」の棒グラフは標準化係数で、ひげは 95% ブートストラップ信頼区間。「推定法」「正則化 λ」「ペア予測一致率」「比較数」「候補数」を確認し、「再推定」で最新の判定から推定し直す。ひげが 0 を跨がない次元が「自分が無意識に好んでいる方向」である（例: `style.black_fill_ratio` が正、`merge.OUT` が負なら「ベタ多め・出力側ブロックは A 寄り」）。
+4. **ベイズ最適化**（「ベイズ最適化」タブ）: 「アーキテクチャ」「LoRA 名」「ブロック粒度」「戦略」（hybrid 推奨）「獲得関数」（ei / ucb / pi）「提案数」と、出力用の「マージ元モデル A」「マージ先モデル B」「検証用プロンプト」を指定して「次のレシピを提案」（`POST /api/style/optimizer/suggest`）。「提案レシピ」ごとの予測平均・不確実性・根拠（感度の高い次元）を確認し、「候補として登録」または「全提案を候補登録」でアリーナの候補に加える。
+5. **レシピ出力と生成**: 提案の「レシピ／ComfyUI 出力」（`POST /api/style/recipes/export`）で、マージ実行スクリプト用設定・ローカル実行用マージスクリプト・ComfyUI API ワークフローを生成し、「レシピ JSON」「マージ設定」「マージスクリプト」「ComfyUI ワークフロー」をダウンロードする。ComfyUI で生成し、精密な階層マージが必要ならマージスクリプトで新しいチェックポイントを作ってから読み込む。
+6. 2〜5 を繰り返す。判定 20〜40 件ごとに選好ベクトルを再推定すると収束が速い。
 
-1. 精製済みキャプション（絵柄・品質タグ除去、トリガー付与、制御要素のカテゴリ整理）を確認。
-2. 共起ヒートマップと癒着リスト（high から順）を確認し、癒着ペアを崩す撮影条件を優先する。
-3. 不足タグと必要追加枚数、推奨撮影条件（条件の組合せと枚数）に従って追加画像を用意する。
-4. バランススコアが上がることを再分析で確認する。
+**データセットのギャップ分析と追加撮影計画**（「データセット分析」タブの「キャプション共起バイアス分析」）:
 
-**グリッド実験**: 線画タッチ × トーン設計 × パース歪み などの X/Y/Z 軸を定義してセルを生成し（`POST /api/style/grid`）、各セルを ComfyUI バッチで生成・採点して結果を登録する（`POST /api/style/grid/{id}/results`）。分析結果の主効果と $\eta^2$ で「効いている軸」を特定し、その軸を Arena の候補パラメータへ反映する。
+1. 「キャプション（1行1画像。「画像ID: タグ, タグ, …」または「タグ, タグ, …」）」に学習データのキャプションを貼り付け、「トリガートークン」（既定 `caf_style`）を指定する。LLM で自然文キャプションも整理したい場合は「DeepSeek でキャプションを精製する」を ON にする。
+2. 「分析を実行」（`POST /api/style/dataset/analyze`）。「バランススコア」「データセット均衡度」「画像数」「追加推奨枚数」、「カテゴリ別エントロピー（正規化）」（1.0 に近いほど偏りなし）を確認する。
+3. 「概念の癒着（Entanglement）」（異カテゴリ間で常に共起するタグの組）と「共起 NPMI ヒートマップ（出現上位タグ）」で癒着を把握し、「不足タグ（ギャップ）」（目標シェアに達するための追加枚数）と「推奨撮影・生成条件」（不足の解消と癒着の分離を同時に満たす条件と枚数）に従って追加画像を用意する。
+4. 「精製後キャプション」（絵柄・品質・メタタグを除去しトリガートークンと制御要素を整理した学習用キャプション）を「精製キャプションを保存」で JSON 保存し、学習に使う。追加後に再分析してバランススコアの改善を確認する。
+
+**グリッド実験**（「グリッド実験・トークン辞書」タブ）:
+
+1. 「構造化トークン辞書」に線画タッチ・白黒トーン・パース歪み等の語彙を「トークン」「カテゴリ」「重み」「説明」で「追加」しておく（`POST /api/style/tokens`）。
+2. 「多軸グリッド実験の作成」で「実験名」「ベースプロンプト」「ネガティブプロンプト」「シード」と、「X 軸」（必須）・「Y 軸」「Z 軸」（「使用する」で有効化）の「軸名」「種別」「対象（パラメータ名・LoRA名・トークンカテゴリ）」「値（カンマ区切り）」を指定して「実験を作成」（`POST /api/style/grid`）。
+3. 実験詳細の「セル数」「採点済み」「最良セル」「状態」を確認し、「セル一覧 JSON」を書き出して生成する（ComfyUI 用のバッチは `POST /api/style/grid/{id}/comfy`）。各セルにスコアを入力して「記録」（`POST /api/style/grid/{id}/results`）。
+4. 分析（主効果・交互作用・$\eta^2$）で「効いている軸」を特定し、その軸を Arena の候補パラメータへ反映する。
 
 ### 5.2 (b) 漫画制作ループ（Structure Lab → Manga Studio）
 
-1. **構造の用意**（Structure Lab）
-   - 自作のあらすじ・既存プロットから抽出（`POST /api/structures/extract`）。固有名詞とジャンル装飾は自動で抽象化される。
-   - または 60 種のプリセット骨格（物語原型 20・演出リズム 20・説得構造 20）から選ぶ（`GET /api/structures?category=…`）。
-   - 類似構造を探す（`POST /api/structures/search`、DTW/コサイン/ハイブリッド）。
-2. **合成・変異**: 構造 A（対立トポロジー）と構造 B（感情・情報開示波形）を選び、位相スライダー（A の比率）と波形スライダー（B の比率）で合成する（`POST /api/structures/merge`）。必要に応じて倒叙化・偽クライマックス挿入などの変異をかける（`POST /api/structures/mutate`）。波形チャートの点をドラッグして手修正し保存できる（`PUT /api/structures/{id}/wave`）。
-3. **漫画プロットへの転用**（任意）: 漫画プロットへのワンクリック変換で人物・ページ配分・めくり位置の設計書を得る（`POST /api/structures/{id}/transpile`、`domain=manga_plot`）。
-4. **ネーム生成**（Manga Studio）: 構造・テーマ（例 `{"THEME": "失われた居場所"}`）・ページ数を指定して生成する（`POST /api/manga/storyboards`）。文法検証と自己修正ループを通過したネームが返る。
-5. **文法監査**: スコアと違反アラート（rule_id・重大度・修正指示）を確認し、必要なら再検証・自動修正する（`/validate`・`/autofix`）。
-6. **SVG 確認**: 感情曲線と同期したページ/コマのタイムラインからページを選び、SVG ネーム（視線誘導ベクトル表示の切替付き）を確認する（`GET /api/manga/storyboards/{id}/pages/{n}/svg?gaze=true`）。見開きは `/spreads/{right}/{left}/svg`。
-7. **ComfyUI ワークフロー出力・投入**: Arena で得たレシピ（またはパラメータ）を指定してコマごとのワークフロー JSON をコンパイル・ダウンロードし（`POST /api/manga/storyboards/{id}/comfy`）、ComfyUI へ非同期投入して進捗を確認する（`POST /api/manga/storyboards/{id}/comfy/queue`、進捗は `/ws/progress`）。
-8. **レイヤー JSON**: コマ枠・画像・フキダシ・テキスト・オノマトペ・ガイドのレイヤー構造（`GET /api/manga/storyboards/{id}/layers`）を他の原稿ツールへの取り込みに使う。
+**Structure Lab**（`#structure`）は左の「プリセット骨格ブラウザー」（カテゴリタブ「全て」「物語原型」「漫画リズム」「説得・マーケ」「カスタム」と「タイトル・要約・タグで検索」欄）と、右の作業タブ「5階層詳細」「テキストから抽出」「合成・変異」「異分野変換」「類似検索」で構成される。
+
+1. **構造の用意**
+   - 「テキストから抽出」タブ: 「入力テキスト（あらすじ・ネーム・記事・LP原稿）」を貼り付け（固有名詞はそのままでよい）、「ソース種別」（あらすじ・プロット／漫画ネーム・脚本／記事・論説／LP・セールス原稿）、「保存カテゴリ」、「タイトルのヒント（任意）」を指定して「抽出を実行（Decompose → Synthesize → Critique → Refine）」（`POST /api/structures/extract`、ジョブとして実行され進捗が表示される）。結果には「LLM 使用」「自己批評スコア」「除去した固有表現」（種別・抽象化後・出現数）、「ジャンル信号」「抽象化後テキスト」「漏洩を自動修正」が表示される。
+   - またはブラウザーから 60 種のプリセット骨格（物語原型 20・漫画演出リズム 20・説得/マーケティング 20）を選ぶ。
+   - 「類似検索」タブ: 選択中の構造を基準に「類似度手法」（ハイブリッド（DTW＋コサイン）／DTW（動的時間伸縮）／コサイン類似度）、「カテゴリ」、「上位件数」を指定して「検索」（`POST /api/structures/search`）。
+2. **5階層の確認と波形編集**（「5階層詳細」タブ）: 「L1 力学グラフ」「L2 感情・情報波形」「L3 ビート」「L4 認知メカニズム」「L5 ブループリント」「転用ガイド」「Mermaid」の各タブと、「ノード / エッジ」「ビート」「緊張ピーク t」「サスペンス係数」「サプライズ係数」「カタルシス指数」の指標を確認する。L2 の波形チャートは点をドラッグして編集でき（「未保存の編集あり」表示）、「波形を保存」（`PUT /api/structures/{id}/wave`）または「元に戻す」。不要な構造は「削除」。
+3. **合成・変異**（「合成・変異」タブ）: 「構造合成（Merge）」で「構造A（力学トポロジーの供給元）」と「構造B（感情・情報開示波形の供給元）」を選び、スライダー「位相合成: 構造Aの比率（weight_topology）」「波形合成: 構造Bの比率（weight_wave）」を調整して「合成を実行」（`POST /api/structures/merge`）。「合成波形（実線）と元波形（破線）」「DTW 整列コスト」「適用した修正」「残存する注意点」「ノード整列（B → 合成後）」を確認し、「合成結果を開く」。「構造変異（Mutate）」では「変異させる構造」「変異種別」「変異強度（intensity）」「乱数シード」を指定して「変異を実行」（`POST /api/structures/mutate`）→「変異結果を開く」。
+4. **漫画プロットへの転用**（任意、「異分野変換」タブ）: 「テーマ変数（スロット名 → 具体値）」を入力し、「漫画プロットへ変換」（他に「LP・セールスファネルへ変換」「考察・解説記事へ変換」）で設計書を得る（`POST /api/structures/{id}/transpile`）。「忠実度スコア」（波形相関・ビート被覆率・力学保存）、「具体化されたブループリント」、セクションごとの「目標緊張度」「目標解放度」「情報開示」「感情目標」「メカニズム」、「領域別ペイロード（domain_payload）」を確認する。
+
+**Manga Studio**（`#manga`）:
+
+5. **ネーム生成**（「ネーム生成」カード。右ページ開始・左ページ終端の見開き慣行で、転換点をめくり直後へ配置する）: 「構造」「タイトル（任意）」「目標ページ数」「シード」「テーマ変数（台詞・プロンプトの語彙）」（例 `THEME` → `失われた居場所`）を指定し、必要なら「DeepSeek で台詞を増幅する（manga.dialogue）」を ON にして「ネームを生成（文法監査ループ込み）」（`POST /api/manga/storyboards`、ジョブとして実行され進捗が表示される）。過去のネームは「保存済みネーム」から開く。
+6. **文法監査**: 指標「漫画文法スコア」「ページ」「コマ」「見開き」「登場人物」「違反」を確認する。「漫画文法アラート」（単調な画面・ピークの強調不足・フキダシ過多・視線の逆行/交差・緩急不足を検査）に rule_id・減点・修正指示が並び、「Nページへ」で該当ページへ移動できる。「再検証」（`/validate`）、「自動修正」（`/autofix`）。
+7. **SVG 確認**（「SVG ネームプレビュー」）: 感情曲線と同期したページ/コマのタイムラインからページを選び、「単ページ」／「見開き」タブ、「← 前」「次 →」、トグル「視線誘導ベクトル」「コマ番号・ショット表記」「断ち切り・仕上がりガイド」、「ズーム」で確認する（`/pages/{n}/svg?gaze=true&labels=true&guides=true`、見開きは `/spreads/{right}/{left}/svg`）。
+8. **ComfyUI ワークフロー出力・投入**（「ComfyUI ワークフロー」カード）: 「アーキテクチャ」「チェックポイント」「LoRA（カンマ区切り）」を指定して「ワークフロー生成」（`POST /api/manga/storyboards/{id}/comfy`）。コマごとのワークフローを「表示」「保存」、全コマを「一括ダウンロード」できる。「表示中ページを投入」でそのページのコマを ComfyUI へ非同期投入し（`POST /api/manga/storyboards/{id}/comfy/queue`）、進捗と「ComfyUI 実行結果」を確認する。
+9. **書き出し**: 「レイヤー JSON」（コマ枠・画像・フキダシ・テキスト・オノマトペ・ガイドのレイヤー構造、`/layers`）と「ネーム JSON」（Storyboard 全体）を他の原稿ツールへの取り込みに使う。不要なネームは「削除」。
 
 ### 5.3 (c) 記事資産化ループ（Asset Publisher）
 
-1. **研究ログ**: 構造（`structure_id`）、Style Alchemy の実験結果（選好ベクトル・ランキング・提案・データセットレポート・グリッド分析の dict）、または研究ログ JSON を入力にする。
-2. **3軸企画**: ①クリエイター向け「物語構造・漫画演出理論」②AI 開発者向け「モデル調合・特徴量制御・データセット設計論」③ビジネス層向け「企画・LP・マーケティング構造論」の企画カードが同時に得られる（`POST /api/publisher/matrix`）。
-3. **5段階執筆**: 企画を選んで実行する（`POST /api/publisher/articles`、`async: true` なら進捗を WebSocket で表示）。段ごとの経過と章ごとのスコアが記録される。
-4. **サニタイズ検証**: 一人称「私」統一と URL 完全除去の検証バッジを確認する。任意のテキストの検証は `POST /api/publisher/verify`、除去の実行は `POST /api/publisher/sanitize`。
-5. **出力**: note 用または Obsidian 用 Markdown をエクスポートする（`GET /api/publisher/articles/{id}/export?format=note|obsidian`）。
-6. **空白テーマ**: ナレッジグラフから次に書くべきテーマ（題名案・章立て案付き）を得る（`GET /api/publisher/gaps`）。
-7. **シリーズ編纂**: 複数記事を選んで教本・マガジン構成に編纂する（`POST /api/publisher/series`）。
+**Asset Publisher**（`#publisher`）は構造研究・モデル実験の知見を、3 軸の高付加価値記事へ自動体系化する（一人称「私」・URL 完全除去）。
+
+1. **ソース選択と3軸企画**（「ソースと3軸企画展開」カード）: タブ「構造から」（構造を選択）、「研究ログ JSON」、「実験ログ JSON」（Style Alchemy の出力 JSON などをそのまま貼り付けられる）からソースを選び、「3軸企画を展開」（`POST /api/publisher/matrix`）。①クリエイター向け「物語構造・漫画演出理論」②AI 開発者向け「モデル調合・特徴量制御・データセット設計論」③ビジネス層向け「企画・LP・マーケティング構造論」の 3 枚の企画カードが表示される。
+2. **5段階執筆**（「5段階執筆パイプライン」カード）: 企画カードの「このプランで執筆」（`POST /api/publisher/articles`、非同期ジョブとして実行され進捗が表示される）。段タブ「Blueprint」「Deep Drafting」「Sanitizer」「Critique」「Polish」で各段の経過を、「批評スコア」「章数」「文字数」「Mermaid 図解」「最終スコア」で結果を確認する。
+3. **サニタイズ検証**: バッジ「✓ 一人称「私」統一（置換 n 件・残存 0）」「✓ URL 完全除去（除去 n 件・残存 0）」を確認する。「再検証」で最新本文を検証し直す（`POST /api/publisher/verify`）。
+4. **プレビューと出力**: 「プレビュー」／「Markdown 原文」タブで本文を確認し、「Markdown をコピー」、または「note 用 Markdown」「Obsidian 用 Markdown」でエクスポートする（`GET /api/publisher/articles/{id}/export?format=note|obsidian`）。
+5. **記事アーカイブとシリーズ編纂**（「記事アーカイブ」）: 生成済み記事を「更新」で一覧し、不要な記事は「記事を削除」（✕）。複数記事を選んで「シリーズ名」を入れ「選択記事を教本に編纂（n）」（`POST /api/publisher/series`）→「Markdown をダウンロード」。
+6. **空白テーマ**（「コンテンツ空白（次に書くべきテーマ）」）: 記事群と構造データのナレッジグラフから、需要が高く未開拓の概念を題名案・章立て案付きで表示する。「再計算」で最新化する（`GET /api/publisher/gaps`）。
+7. **サニタイズ試験**（「サニタイズ試験」カード）: 任意のテキストを貼り付けて「サニタイズを実行」（`POST /api/publisher/sanitize`）。一人称の置換内容と除去した URL 種別が表示される。
 
 ---
 
@@ -1148,46 +1171,112 @@ flowchart LR
 
 ### 6.1 API 概要
 
-ベース URL は `http://127.0.0.1:8765`。重い処理（構造抽出・ネーム生成・記事生成・企画展開・ComfyUI 投入）は本文に `"async": true` を指定するとジョブ ID（`{"job_id": …}`）を返し、進捗は `WS /ws/progress` に `{"type":"job","job_id","kind","status","progress","stage","message"}` として配信される（既定は同期実行で結果を直接返す）。WebSocket は接続時に `{"type":"hello"}`、`{"type":"ping"}` に `{"type":"pong"}` を返す。エラーは `{"detail": …}`（ドメイン例外 400、未検出 404、前提不足 409、検証エラー 422）。
+ベース URL は `http://127.0.0.1:8765`。FastAPI の自動ドキュメント（`http://127.0.0.1:8765/docs`）で全エンドポイントのリクエスト/レスポンス型を確認できる。
 
-| 区分 | メソッド・パス | 用途 |
+**共通仕様**
+
+- **非同期ジョブ**: 構造抽出（`POST /api/structures/extract`）、ネーム生成（`POST /api/manga/storyboards`）、3軸企画（`POST /api/publisher/matrix`）、記事生成（`POST /api/publisher/articles`）は本文に `"async": true` を指定するとジョブを投入して `{"job_id", "status", "kind"}` を返す（既定は同期実行で結果を直接返す）。ComfyUI 投入（`POST /api/manga/storyboards/{id}/comfy/queue`）は常にジョブとして実行され `{"job_id", "status", "kind", "panels"}` を返す。ジョブの状態は `GET /api/jobs/{job_id}`（queued / running / succeeded / failed、progress 0〜1、stage、message、result、error）。
+- **WebSocket** `WS /ws/progress`: 接続時に `{"type":"hello"}`、`{"type":"ping"}` に `{"type":"pong"}` を返し、全ジョブの進捗を `{"type":"job","job_id","kind","status","progress","stage","message"}` として配信する。
+- **エラー**: `{"detail": …}` 形式。ドメイン例外（`ValueError` 等）は 400、存在しない ID は 404、前提不足（対戦ペアを作れない・選好ベクトルを推定できない等）は 409、入力検証エラーは 422。
+- **静的配信**: `web_studio/frontend/dist` があれば `/` で UI を配信し、`/api`・`/ws` 以外の未知パスは `index.html` へフォールバックする（SPA）。
+
+**System / Jobs**
+
+| メソッド・パス | 主なパラメータ | 用途 |
 |---|---|---|
-| System | `GET /api/health` | 稼働状態・LLM プロバイダ・フォールバック状態・シード件数 |
-| System | `GET/PUT /api/system/config` | LLM / ComfyUI 設定の取得・部分更新（永続化と LLM 再構築） |
-| System | `POST /api/system/llm/test` / `POST /api/system/comfy/test` | 接続テスト |
-| System | `GET /api/system/db/stats` / `POST /api/system/db/backup` / `GET /api/system/db/backups` | DB 統計・バックアップ |
-| System | `GET /api/system/telemetry` / `GET /api/system/telemetry/runs/{run_id}` | LLM 呼び出し履歴・統計・ハーネス実行履歴／1 実行の段ごとのログと呼び出し |
-| Jobs | `GET /api/jobs` / `GET /api/jobs/{id}` / `WS /ws/progress` | ジョブ状態と進捗配信 |
-| Structure | `GET/POST /api/structures`、`GET/DELETE /api/structures/{id}` | 一覧（category / source_kind / q / limit / offset）・保存・取得・削除 |
-| Structure | `PUT /api/structures/{id}/wave` | 波形編集の保存（全体を再検証） |
-| Structure | `POST /api/structures/extract` / `merge` / `mutate`、`GET /api/structures/mutations` | 抽出・合成・変異・変異種別一覧 |
-| Structure | `POST /api/structures/{id}/transpile` | 漫画プロット / LP / 記事への転用 |
-| Structure | `POST /api/structures/search` | 波形類似度検索 |
-| Structure | `GET /api/structures/{id}/audit` | 構造整合性監査（§4.4.5 の検査コード） |
-| Structure | `GET /api/structures/{id}/mermaid` / `GET /api/structures/{id}/wave.svg` | Mermaid 記法（力学グラフ・ビート）・SVG 波形 |
-| Seeds | `POST /api/seeds/load` / `GET /api/seeds/summary` | シード投入（overwrite 指定可）・集計 |
-| Style | `GET/POST /api/style/candidates`、`/bootstrap`、`/{id}`、`/{id}/preview.svg` | 候補管理・LHS 初期候補・手続き的プレビュー |
-| Style | `GET /api/style/arena/next`、`GET/POST /api/style/comparisons` | 次の対戦ペア・判定登録 |
-| Style | `GET /api/style/rankings` / `GET /api/style/preference-vector` | Elo/BT ランキング・美的選好ベクトル |
-| Style | `GET /api/style/optimizer/space` / `POST /api/style/optimizer/suggest` | パラメータ空間・次レシピ提案 |
-| Style | `POST /api/style/recipes/export` / `GET /api/style/recipes` | マージ設定・スクリプト・ComfyUI ワークフローの出力／保存済みレシピ一覧 |
-| Style | `POST /api/style/dataset/analyze` / `GET /api/style/dataset/reports` | キャプション精製・共起バイアス・ギャップ分析／分析レポート履歴 |
-| Style | `GET/POST /api/style/tokens`、`DELETE /api/style/tokens?token=…&category=…` | 構造化トークン辞書 |
-| Style | `GET/POST /api/style/grid`、`GET /api/style/grid/{id}`、`POST /api/style/grid/{id}/results`、`POST /api/style/grid/{id}/comfy` | グリッド実験の作成・取得（分析付き）・結果登録・ComfyUI バッチ出力 |
-| Manga | `GET/POST /api/manga/storyboards`、`GET/DELETE /api/manga/storyboards/{id}` | ネーム一覧・生成（文法検証込み）・取得・削除 |
-| Manga | `POST /api/manga/storyboards/{id}/validate` / `autofix` | 漫画文法検証・自動修正 |
-| Manga | `GET /api/manga/storyboards/{id}/pages/{page_index}/svg`（`gaze` / `labels` / `guides` / `sketch`）、`/spreads/{right}/{left}/svg`、`/layers`、`/config` | SVG ネーム（視線誘導・ラベル・断ち切りガイド・下描きの切替）・見開き・レイヤー JSON・生成設定 |
-| Manga | `POST /api/manga/storyboards/{id}/comfy` / `comfy/queue` | ComfyUI ワークフローのコンパイル・非同期投入 |
-| Publisher | `POST /api/publisher/matrix` | 3 軸企画展開 |
-| Publisher | `GET/POST /api/publisher/articles`、`GET/DELETE /api/publisher/articles/{id}`、`/export` | 記事一覧・5 段階執筆・取得・削除・note/Obsidian 出力 |
-| Publisher | `POST /api/publisher/sanitize` / `POST /api/publisher/verify` | サニタイズ実行・検証 |
-| Publisher | `GET /api/publisher/gaps` / `POST /api/publisher/series` | コンテンツ空白・シリーズ編纂 |
+| `GET /api/health` | — | `status`, `version`, `llm_provider`（実効）, `llm_configured_provider`, `llm_fallback_active`, `llm_model`, `comfy_base_url`, `comfy_mock`, `db_path`, `structures`, `seeds_loaded`, `running_jobs`, `ws_clients`, `started_at` |
+| `GET /api/system/config` | — | 設定の取得（API キーはマスク） |
+| `PUT /api/system/config` | 本文 `{"llm": {...}, "comfy": {...}}`（部分更新） | 深いマージ → 検証 → `config.json` へ保存 → LLM クライアント再構築 |
+| `POST /api/system/llm/test` | — | LLM 接続テスト（到達性・モデル一覧・所要時間） |
+| `POST /api/system/comfy/test` | — | ComfyUI 接続テスト（モック設定時は内蔵モックを起動して確認） |
+| `GET /api/system/db/stats` | — | DB パス・サイズ・テーブル別件数 |
+| `POST /api/system/db/backup` / `GET /api/system/db/backups` | — | バックアップ作成（`backups/foundry_YYYYmmdd_HHMMSS.sqlite3`）・一覧 |
+| `GET /api/system/telemetry` | `limit`（既定 50） | LLM 呼び出し履歴・統計・ハーネス実行履歴 |
+| `GET /api/system/telemetry/runs/{run_id}` | — | 1 回のハーネス実行の段ごとのログと呼び出し |
+| `GET /api/jobs` | `limit`（既定 50） | ジョブ一覧 |
+| `GET /api/jobs/{job_id}` | — | ジョブ状態・結果 |
+| `WS /ws/progress` | — | 進捗配信（ping/pong 対応） |
 
-FastAPI の自動ドキュメント（`http://127.0.0.1:8765/docs`）で各エンドポイントのリクエスト/レスポンス型を確認できる。
+**Structure Engine / Seeds**
 
-### 6.2 テストの実行
+| メソッド・パス | 主なパラメータ | 用途 |
+|---|---|---|
+| `GET /api/structures` | `category`, `source_kind`, `q`, `tag`, `limit`（既定 200）, `offset`, `order`（既定 `id`） | 一覧 `{items, total}` |
+| `POST /api/structures` | 本文 = `UniversalStructure` | 保存（upsert） |
+| `GET /api/structures/mutations` | — | 変異種別（type / label / description） |
+| `POST /api/structures/extract` | `text`, `source_kind`（既定 synopsis）, `title_hint`, `category`, `save`（既定 true）, `async` | 脱フレーバー 5 階層抽出 → `ExtractionResult` |
+| `POST /api/structures/merge` | `struct_a_id`, `struct_b_id`, `weight_topology`（既定 0.7）, `weight_wave`（既定 0.7）, `title`, `save` | 構造合成 → `{structure, report}` |
+| `POST /api/structures/mutate` | `structure_id`, `mutation_type`, `intensity`（既定 1.0）, `seed`, `save` | 構造変異 → `{structure}` |
+| `POST /api/structures/search` | `structure_id` または `wave`, `method`（既定 hybrid）, `top_k`（既定 5）, `category` | 波形類似度検索 → `{hits}` |
+| `GET /api/structures/{id}` / `DELETE /api/structures/{id}` | — | 取得・削除 |
+| `PUT /api/structures/{id}/wave` | 本文 = `EmotionalInformationWave` | 波形編集の保存（構造全体を再検証） |
+| `GET /api/structures/{id}/audit` | — | 整合性監査（§4.4.5 の検査コード） |
+| `POST /api/structures/{id}/transpile` | `domain`（manga_plot / marketing_lp / article）, `theme_variables` | 異分野転用 → `TranspiledDesign` |
+| `GET /api/structures/{id}/mermaid` | — | Mermaid 記法 `{graph, beats}` |
+| `GET /api/structures/{id}/wave.svg` | `compare_id`, `width`（既定 800）, `height`（既定 320）, `channels`, `title` | SVG 波形（`compare_id` で重ね描き） |
+| `POST /api/seeds/load` | 本文 `{"overwrite": false}`（省略可） | シード投入 → `SeedReport` |
+| `GET /api/seeds/summary` | — | シード件数 `{total, by_category}` |
 
-全テスト（外部ネットワーク不要。LLM と ComfyUI はモックに固定される）:
+**Style Alchemy**
+
+| メソッド・パス | 主なパラメータ | 用途 |
+|---|---|---|
+| `GET /api/style/candidates` | `source`, `limit`（既定 1000） | 候補一覧 |
+| `POST /api/style/candidates` | `label`, `params`, `recipe`, `image_ref`, `source` | 候補登録 |
+| `POST /api/style/candidates/bootstrap` | `n`（既定 8）, `architecture`, `lora_names`, `grouping`, `seed` | LHS 初期候補の生成・登録 |
+| `GET /api/style/candidates/{id}` / `DELETE /api/style/candidates/{id}` | — | 取得・削除 |
+| `GET /api/style/candidates/{id}/preview.svg` | `width`, `height`（既定 512）, `label` | 手続き的プレビュー |
+| `GET /api/style/arena/next` | `seed` | 次の対戦ペア `{left, right}`（候補不足は 409） |
+| `GET /api/style/comparisons` / `POST /api/style/comparisons` | GET: `limit`, `session_id`／POST: `left_id`, `right_id`, `outcome`（left / right / tie）, `response_time_ms`, `session_id` | 判定履歴・判定登録 |
+| `GET /api/style/rankings` | — | Elo / Bradley-Terry ランキング |
+| `GET /api/style/preference-vector` | `method`（既定 pairwise_logistic / ridge_bt）, `n_bootstrap`（既定 100）, `seed` | 美的選好ベクトル（比較不足は 409） |
+| `GET /api/style/optimizer/space` | `architecture`, `lora_names`, `grouping` | パラメータ空間 |
+| `POST /api/style/optimizer/suggest` | `n`（既定 3）, `strategy`（既定 hybrid）, `acquisition`（既定 ei）, `architecture`, `lora_names`, `grouping`, `register`, `seed` | 次レシピ提案 `{suggestions, best, observations}` |
+| `POST /api/style/recipes/export` | `params`, `architecture`, `model_a`, `model_b`, `model_c`, `loras`, `name`, `prompt`, `negative`, `seed`, `width`, `height` | `{recipe, merge_config, merge_script, comfy_workflow}` |
+| `GET /api/style/recipes` | `limit` | 保存済みレシピ一覧 |
+| `POST /api/style/dataset/analyze` | `captions_text` または `records`, `trigger_token`（既定 caf_style）, `use_llm`, `save`, `name` | キャプション精製＋共起バイアス・ギャップ分析 `{cleansed, report}` |
+| `GET /api/style/dataset/reports` | `limit` | 分析レポート履歴 |
+| `GET /api/style/tokens` / `POST /api/style/tokens` / `DELETE /api/style/tokens` | GET: `category`／POST: `TokenEntry`／DELETE: `token`（必須）, `category` | 構造化トークン辞書 |
+| `POST /api/style/grid` / `GET /api/style/grid` | POST: `name`, `base_prompt`, `negative_prompt`, `x_axis`, `y_axis`, `z_axis`, `base_params`, `seed`／GET: `limit` | グリッド実験の作成 `{experiment, cells}`・一覧 |
+| `GET /api/style/grid/{id}` | — | `{experiment, cells, analysis}` |
+| `POST /api/style/grid/{id}/results` | `cell_id`, `score`, `image_ref`, `notes` | セル結果の記録 |
+| `POST /api/style/grid/{id}/comfy` | `architecture`, `model_a`, `model_b`, `loras`, `width`, `height` | 全セルの ComfyUI ワークフロー（バッチ） |
+
+**Manga Pipeline**
+
+| メソッド・パス | 主なパラメータ | 用途 |
+|---|---|---|
+| `POST /api/manga/storyboards` | `structure_id`, `theme`, `config`（`StoryboardConfig` の部分指定）, `title`, `async` | ネーム生成（文法監査ループ込み）→ `Storyboard` |
+| `GET /api/manga/storyboards` | `limit`（既定 100）, `offset` | 要約一覧 |
+| `GET /api/manga/storyboards/{id}` / `DELETE /api/manga/storyboards/{id}` | — | 取得・削除 |
+| `GET /api/manga/storyboards/{id}/config` | — | 生成に使った設定 |
+| `POST /api/manga/storyboards/{id}/validate` | — | 漫画文法検証 → `GrammarReport` |
+| `POST /api/manga/storyboards/{id}/autofix` | — | 自動修正 → 再検証して保存 |
+| `GET /api/manga/storyboards/{id}/pages/{page_index}/svg` | `gaze`（既定 false）, `labels`, `guides`, `sketch`（既定 true） | SVG ネーム（視線誘導・ラベル・断ち切りガイド・下描きの切替） |
+| `GET /api/manga/storyboards/{id}/spreads/{right_index}/{left_index}/svg` | 同上 | 見開き SVG |
+| `GET /api/manga/storyboards/{id}/layers` | — | レイヤー構造 JSON |
+| `POST /api/manga/storyboards/{id}/comfy` | `recipe` または `recipe_params`, `architecture`, `model_a`, `model_b`, `loras`, `panel_ids`, `base_resolution` | コマごとの ComfyUI ワークフロー `{workflows}` |
+| `POST /api/manga/storyboards/{id}/comfy/queue` | 上記＋`max_panels`（既定 8） | ComfyUI への非同期投入（ジョブ。内蔵モック設定時はモックで実行） |
+
+**Asset Publisher**
+
+| メソッド・パス | 主なパラメータ | 用途 |
+|---|---|---|
+| `POST /api/publisher/matrix` | `structure_id` / `research_log` / `experiment` のいずれか, `save`, `async` | 3 軸企画 → `ContentMatrix` |
+| `GET /api/publisher/matrices` | `limit`（既定 50） | 保存済みマトリクス一覧 |
+| `GET /api/publisher/matrices/{matrix_id}` | — | マトリクス取得 |
+| `POST /api/publisher/articles` | `plan` または `matrix_id`＋`axis`, `research_log`, `structure_id`, `config`（`WriterConfig` の部分指定）, `async` | 5 段階執筆 → `PublishedArticle` |
+| `GET /api/publisher/articles` | `axis`, `source_id`, `limit`（既定 100）, `offset` | 記事一覧 |
+| `GET /api/publisher/articles/{id}` / `DELETE /api/publisher/articles/{id}` | — | 取得・削除 |
+| `GET /api/publisher/articles/{id}/export` | `format`（obsidian 既定 / note） | Markdown 出力（`text/markdown`） |
+| `POST /api/publisher/sanitize` | `text` | サニタイズ実行 → `{text, report}` |
+| `POST /api/publisher/verify` | `text` | 検証のみ → `SanitizationReport` |
+| `GET /api/publisher/gaps` | `top_k`（既定 5） | コンテンツ空白・次テーマ提案 |
+| `POST /api/publisher/series` | `article_ids`, `title`, `description`, `format`（既定 obsidian） | シリーズ編纂 → `{volume, markdown}` |
+
+### 6.2 テストと検証の実行
+
+**Python テスト**（外部ネットワーク不要。`tests/conftest.py` が LLM プロバイダを `mock` に固定し、ComfyUI はモック、SQLite は一時ディレクトリに隔離する）。リポジトリ直下で全件を実行する:
 
 ```bash
 python -m pytest
@@ -1199,34 +1288,46 @@ python -m pytest
 python -m pytest tests/test_structure_engine.py -q
 ```
 
-| テストファイル | 内容 |
+| テストファイル | 役割 |
 |---|---|
-| `tests/test_quality_gates.py` | Zero Placeholder Policy の機械検査、全モジュールの import 健全性 |
-| `tests/test_llm_client.py` | JSON 修復・スキーマ合成器・自己修復・テレメトリ・4 段階ハーネス・アダプタ・フォールバック |
-| `tests/test_structure_engine.py` | 脱フレーバー・抽出・類似度・合成/変異・転用・リポジトリ・可視化・ローダー・監査 |
-| `tests/test_style_alchemy.py` | Elo/BT・選好ベクトル・GP/CMA-ES/GA・最適化・エクスポート・データセット・グリッド |
-| `tests/test_manga_pipeline.py` | 幾何・読み順・視線・禁則・ネーム生成・文法監査・コンパイラ・モック ComfyUI・SVG |
-| `tests/test_asset_publisher.py` | サニタイザー・3 軸展開・5 段階執筆・採点・ナレッジグラフ・出力 |
-| `tests/test_seeds.py` | 60 パターンの準拠・品質基準・波形の相互独立性・DB 投入の冪等性 |
-| `tests/test_backend_api.py` | 全 REST / WebSocket エンドポイント |
-| `tests/test_e2e_foundry.py` | 4 ループを貫く一気通貫シナリオ |
+| `tests/test_quality_gates.py` | Zero Placeholder Policy の機械検査（禁止語・単独 `pass` 行・`...` 本体）、`core` / `web_studio` 全モジュールの import 健全性、**Python 3.10 互換性検査**（全ソースを `ast.parse(feature_version=(3, 10))` で解析、3.12 以降でしか書けない f-string（PEP 701）の検出、3.11 以降専用 API の使用検出） |
+| `tests/test_llm_client.py` | JSON 修復・JSON Schema 合成器・モックの決定論性・自己修復リトライ・テレメトリ・4 段階ハーネス・OpenAI 互換/Ollama アダプタ（`httpx.MockTransport`）・ファクトリと自動フォールバック |
+| `tests/test_structure_engine.py` | 5 階層スキーマ・脱フレーバー・ヒューリスティック/LLM 抽出・類似度（DTW/コサイン）・合成と 7 種の変異・異分野転用・リポジトリ・可視化（Mermaid/SVG）・シードローダー・整合性監査 |
+| `tests/test_style_alchemy.py` | Elo / Bradley-Terry・美的選好ベクトル・GP / EI・CMA-ES・GA・ベイズ最適化・レシピ出力（マージスクリプト・ComfyUI 検証）・データセット精製とギャップ分析・グリッド実験・リポジトリ・プレビュー SVG |
+| `tests/test_manga_pipeline.py` | 幾何・XY カット読み順・視線の逆行/交差・文節改行と禁則・ネーム生成・漫画文法監査と自己修正ループ・ComfyUI コンパイラ・クライアントとモック ComfyUI（実 uvicorn スレッド）・SVG レンダラー |
+| `tests/test_asset_publisher.py` | 一人称統一と URL 完全除去の網羅ケース・3 軸展開・5 段階執筆と採点・ナレッジグラフ・note / Obsidian / シリーズ出力・リポジトリ |
+| `tests/test_seeds.py` | 60 パターンの完全準拠・品質基準・波形の相互独立性・DB 投入の冪等性・類似検索 |
+| `tests/test_backend_api.py` | FastAPI `TestClient` による全エンドポイント（health・シード・構造 CRUD/波形編集/監査・抽出・合成/変異/転用/検索/可視化・Style の候補/アリーナ/選好/最適化/データセット/トークン/グリッド・ネームのライフサイクルと ComfyUI・Publisher のマトリクス/記事/出力/シリーズ）、WebSocket の ping/pong と非同期ジョブ進捗、失敗ジョブの報告、接続テスト・DB 統計・バックアップ・テレメトリ、設定更新の永続化と LLM 再構築、引数なし `create_app()` の環境変数読み込み、SPA フォールバックと静的配信 |
+| `tests/test_e2e_foundry.py` | 4 ループを貫く一気通貫シナリオ（シード 60 件投入 → 抽出 → 合成 → ネーム生成と文法合格 → SVG・ComfyUI JSON とモック実行 → Elo/BT・選好ベクトル・ベイズ最適化 → 記事生成と一人称/URL 検証 → テレメトリ） |
 
-フロントエンドの型検査と本番ビルド（`web_studio/frontend` で）:
-
-```bash
-npx tsc --noEmit
-```
+**フロントエンドの型検査と本番ビルド**:
 
 ```bash
-npm run build
+cd web_studio/frontend && npx tsc --noEmit && npm run build
 ```
+
+**UI スモークテスト**（`web_studio/frontend/scripts/ui-smoke.mjs`）: ビルド済みスタジオを Playwright（Chromium）で巡回し、5 つのワークスペースの主要操作を実行してブラウザのコンソールエラーが 0 件であることを確認する。Node から `require("playwright")` で読み込める Playwright と Chromium が必要（無い場合は `web_studio/frontend` で Playwright を導入し、ブラウザをインストールしておく）。
+
+前提として、ビルド済み UI を配信するバックエンドを mock プロバイダ・ポート 8799（スクリプトの既定 URL `http://127.0.0.1:8799`）で起動しておく（別ターミナル）:
+
+```bash
+python run_studio.py --provider mock --comfy-mock --port 8799 --no-browser
+```
+
+その状態で `web_studio/frontend` からスクリプトを実行する（別の URL を使う場合は `CAF_UI_URL` で指定、`CAF_UI_SCREENSHOTS=<保存先ディレクトリ>` でワークスペースごとのスクリーンショットを保存）:
+
+```bash
+cd web_studio/frontend && CAF_UI_URL=http://127.0.0.1:8799 node scripts/ui-smoke.mjs
+```
+
+失敗時は終了コード 1 となり、失敗内容と収集したコンソールエラーが表示される。
 
 ### 6.3 トラブルシューティング
 
 | 症状 | 原因と対処 |
 |---|---|
 | ヘルスで `llm_provider` が mock・`llm_fallback_active=true` になる | `auto` が実機に到達できずモックへ切り替わった。LLM サーバの起動・ポート（8000 / 11434）・URL 末尾の `/v1`・モデル名の一致を確認し、System 画面で接続テスト後に設定を保存し直す（LLM クライアントが再構築される） |
-| 接続テストは成功するが構造化生成が失敗する | System 画面のテレメトリで該当タスクの失敗呼び出しのエラー（検証エラー一覧）と思考ログを確認する。`structured_output` を `json_object` ⇔ `json_schema` で切り替える、`max_tokens` を増やす（出力が途中で切れている場合）、`max_repair_attempts` を増やす。失敗してもベースラインへフォールバックするため処理自体は継続する |
+| 接続テストは成功するが構造化生成が失敗する | System 画面の「推論テレメトリ」の結果列で失敗した呼び出し（タスク・段階・試行）を特定し、`GET /api/system/telemetry` の `error`（検証エラー一覧）・`response_excerpt`（応答抜粋）・`reasoning_log`（思考ログ）を確認する。`structured_output` を `json_object` ⇔ `json_schema` で切り替える、`max_tokens` を増やす（出力が途中で切れている場合）、`max_repair_attempts` を増やす。失敗してもベースラインへフォールバックするため処理自体は継続する |
 | 応答に思考過程が混ざる・JSON が抽出できない | `<think>` は自動除去される。サーバ側の思考分離機能を有効にすると `reasoning_content` として分離され安定する。テレメトリの `response_excerpt` で実際の応答形式を確認する |
 | タイムアウトする | `timeout_s` を延長する（低速環境では 600 秒程度）。ハーネスの段数（decompose/critique）を減らす、`skip_refine_when_accepted` を有効にする |
 | ComfyUI でノードが見つからない・入力名エラー | 接続テストを行い、投入時の警告（`adapt_prompt_to_object_info` の改名・置換・未導入の報告）を確認する。LoRA Block Weight を使うには ComfyUI-Inspire-Pack を導入する。階層マージノードが無い場合は自動で `ModelMergeSimple` に置換されるので、精密マージはエクスポートしたマージスクリプトで行う |
@@ -1234,4 +1335,4 @@ npm run build
 | ポートが使用中で起動しない | `--port` で別ポートを指定する（例 `python run_studio.py --port 8770`）。開発モードの Vite は 5173 を使う |
 | `database is locked` | 同じデータディレクトリに複数のスタジオを起動していないか確認する。書き込みはプロセス内で直列化され、ビジー待ちは 30 秒。ネットワークドライブ上のデータディレクトリは避ける |
 | UI が表示されない（API のみ動く） | Node.js / npm が無い場合は UI のビルドがスキップされる。Node.js 18 以上を導入して `python run_studio.py --rebuild-frontend` を実行する。ビルドエラーは `web_studio/frontend` で `npx tsc --noEmit` を実行して型エラーを確認する |
-| シードが入っていない | `python run_studio.py --init-only` または `POST /api/seeds/load` を実行する。既存 ID はスキップされ、`{"overwrite": true}` で更新する |
+| シードが入っていない | System 画面の「初期シード（普遍的構造データベース）」で「未投入分を投入」（既存 ID はスキップ）または「上書き再投入」を押す。CLI なら `python run_studio.py --init-only`、API なら `POST /api/seeds/load`（`{"overwrite": true}` で更新） |
