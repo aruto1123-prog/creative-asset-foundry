@@ -81,19 +81,19 @@
 - [x] FastAPI アプリファクトリ・サービスコンテナ・ジョブ管理・WebSocketハブ
 - [x] 全RESTエンドポイント（system / structures / seeds / style / manga / publisher / jobs）
 - [x] `tests/test_backend_api.py` 全件パス
-- [ ] フロントエンド基盤（Vite + React 18 + TypeScript + Tailwind、APIクライアント、WSフック）
-- [ ] Workspace 1 Structure Lab
-- [ ] Workspace 2 Style Alchemy Arena
-- [ ] Workspace 3 Manga Studio
-- [ ] Workspace 4 Asset Publisher
-- [ ] Workspace 5 System & Local AI Config
+- [x] フロントエンド基盤（Vite + React 18 + TypeScript + Tailwind、APIクライアント、WSフック）
+- [x] Workspace 1 Structure Lab
+- [x] Workspace 2 Style Alchemy Arena
+- [x] Workspace 3 Manga Studio
+- [x] Workspace 4 Asset Publisher
+- [x] Workspace 5 System & Local AI Config
 
 ## Phase 8：結合・E2E・ビルド検証・ドキュメント
 - [x] `tests/test_e2e_foundry.py`（一気通貫E2E）全件パス
 - [ ] `pytest` 全件グリーン
-- [ ] `npx tsc --noEmit` エラー0件
-- [ ] `npm run build` 成功
-- [ ] `run_studio.py`（ワンコマンド起動）
+- [x] `npx tsc --noEmit` エラー0件
+- [x] `npm run build` 成功
+- [x] `run_studio.py`（ワンコマンド起動）
 - [ ] `docs/MASTER_GUIDE.md`（数理解説・接続手順・運用ワークフロー）
-- [ ] `docs/ARCHITECTURE.md`
+- [x] `docs/ARCHITECTURE.md`
 - [ ] 最終コミット

@@ -29,3 +29,141 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Markdown プレビュー（Asset Publisher） */
+.md-body {
+  color: #e6e9f3;
+  font-size: 0.92rem;
+  line-height: 1.85;
+}
+
+.md-body h1 {
+  margin: 0 0 1rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #f4f6fb;
+}
+
+.md-body h2 {
+  margin: 2rem 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #2f3549;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #a9bcff;
+}
+
+.md-body h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #c5cbe0;
+}
+
+.md-body p {
+  margin: 0.7rem 0;
+}
+
+.md-body ul,
+.md-body ol {
+  margin: 0.6rem 0 0.6rem 1.4rem;
+}
+
+.md-body ul {
+  list-style: disc;
+}
+
+.md-body ol {
+  list-style: decimal;
+}
+
+.md-body li {
+  margin: 0.2rem 0;
+}
+
+.md-body strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.md-body blockquote {
+  margin: 1rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 3px solid #7c9cff;
+  background: #12151f;
+  color: #c5cbe0;
+}
+
+.md-body table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.md-body th,
+.md-body td {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #2f3549;
+  text-align: left;
+}
+
+.md-body th {
+  background: #181c28;
+  color: #c5cbe0;
+}
+
+.md-body code {
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  background: #181c28;
+  font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.md-body hr {
+  margin: 1.5rem 0;
+  border-color: #2f3549;
+}
+
+.md-codeblock {
+  margin: 1rem 0;
+  overflow: hidden;
+  border: 1px solid #2f3549;
+  border-radius: 8px;
+  background: #07080c;
+}
+
+.md-codeblock-label {
+  padding: 0.3rem 0.75rem;
+  border-bottom: 1px solid #232838;
+  color: #99a1bd;
+  font-size: 0.7rem;
+}
+
+.md-mermaid .md-codeblock-label {
+  color: #a9bcff;
+}
+
+.md-codeblock pre {
+  margin: 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+}
+
+.md-codeblock code {
+  padding: 0;
+  background: transparent;
+  color: #c5cbe0;
+  white-space: pre;
+}
+
+.md-link {
+  color: #a9bcff;
+  text-decoration: underline dotted;
+}
+
+.md-image {
+  color: #99a1bd;
+}
