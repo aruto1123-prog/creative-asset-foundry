@@ -78,9 +78,9 @@
 - [x] `tests/test_seeds.py` 全件パス
 
 ## Phase 7：統合ローカルWebスタジオUI（`web_studio/`）
-- [ ] FastAPI アプリファクトリ・サービスコンテナ・ジョブ管理・WebSocketハブ
-- [ ] 全RESTエンドポイント（system / structures / seeds / style / manga / publisher / jobs）
-- [ ] `tests/test_backend_api.py` 全件パス
+- [x] FastAPI アプリファクトリ・サービスコンテナ・ジョブ管理・WebSocketハブ
+- [x] 全RESTエンドポイント（system / structures / seeds / style / manga / publisher / jobs）
+- [x] `tests/test_backend_api.py` 全件パス
 - [ ] フロントエンド基盤（Vite + React 18 + TypeScript + Tailwind、APIクライアント、WSフック）
 - [ ] Workspace 1 Structure Lab
 - [ ] Workspace 2 Style Alchemy Arena
