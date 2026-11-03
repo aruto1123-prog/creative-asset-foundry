@@ -27,16 +27,16 @@
 
 ## Phase 2：普遍的構造抽出＆異分野転用エンジン（`core/structure_engine/`）
 - [x] 5階層オントロジー `schemas.py`（L1 力学グラフ / L2 感情・情報波形 / L3 ビート / L4 認知メカニズム / L5 ブループリント）
-- [ ] 脱フレーバー抽出器 `extractor.py`（固有名詞・装飾除去、ヒューリスティック逆コンパイル、漏洩再走査）
-- [ ] 構造主義物語論に基づくDeepSeek用システムプロンプト群 `prompts.py`
-- [ ] 構造整合性監査 `consistency.py`
-- [ ] 構造代数 `composer.py`（merge_structures：ノード整列＋DTW整列補間、mutate_structure：7種）
-- [ ] 異分野トランスパイラ `transpiler.py`（漫画プロット / LP・ファネル / 解説記事、忠実度スコア）
-- [ ] 類似度 `similarity.py`（コサイン・多変量DTW・グラフ類似）
-- [ ] リポジトリ `repository.py`（SQLite保存・検索・類似検索）
-- [ ] 可視化 `visualizer.py`（Mermaid・SVG波形・Markdownレポート）
-- [ ] モックハンドラ `mock_handlers.py`
-- [ ] `tests/test_structure_engine.py` 全件パス
+- [x] 脱フレーバー抽出器 `extractor.py`（固有名詞・装飾除去、ヒューリスティック逆コンパイル、漏洩再走査）
+- [x] 構造主義物語論に基づくDeepSeek用システムプロンプト群 `prompts.py`
+- [x] 構造整合性監査 `consistency.py`
+- [x] 構造代数 `composer.py`（merge_structures：ノード整列＋DTW整列補間、mutate_structure：7種）
+- [x] 異分野トランスパイラ `transpiler.py`（漫画プロット / LP・ファネル / 解説記事、忠実度スコア）
+- [x] 類似度 `similarity.py`（コサイン・多変量DTW・グラフ類似）
+- [x] リポジトリ `repository.py`（SQLite保存・検索・類似検索）
+- [x] 可視化 `visualizer.py`（Mermaid・SVG波形・Markdownレポート）
+- [x] モックハンドラ `mock_handlers.py`
+- [x] `tests/test_structure_engine.py` 全件パス
 
 ## Phase 3：極限絵柄開発・モデル調合＆LoRA研究ラボ（`core/style_alchemy/`）
 - [x] 共有スキーマ `schemas.py`（アーキテクチャ別ブロック定義・StyleRecipe）
@@ -74,7 +74,7 @@
 - [ ] `manga_panel_rhythm_patterns.json`（20）
 - [ ] `persuasion_and_marketing_structures.json`（20）
 - [ ] 著作スクリプト `seeds/authoring/`
-- [ ] SQLite初期シードローダー `seeds/loader.py`
+- [x] SQLite初期シードローダー `seeds/loader.py`
 - [ ] `tests/test_seeds.py` 全件パス
 
 ## Phase 7：統合ローカルWebスタジオUI（`web_studio/`）

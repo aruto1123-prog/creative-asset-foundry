@@ -49,6 +49,7 @@ _LAZY_SUBMODULES = (
     "transpiler",
     "visualizer",
     "seeds",
+    "samples",
 )
 
 

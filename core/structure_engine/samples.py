@@ -43,6 +43,7 @@ def _reversal_payload() -> dict[str, Any]:
             "source_kind": SourceKind.MANUAL.value,
             "tags": ["構造的反転", "裏切り", "代償", "自立"],
             "origin_domain": "generic",
+            "created_at": "2026-01-01T00:00:00+00:00",
             "lineage": ["アリストテレス的逆転（ペリペテイア）", "師の裏切り型"],
         },
         "tension_graph": {
@@ -63,6 +64,7 @@ def _reversal_payload() -> dict[str, Any]:
                 {"source": "seeker", "target": "system", "kind": "opposition", "intensity": 0.7, "label": "秩序への反抗"},
                 {"source": "guardian", "target": "system", "kind": "dependency", "intensity": 0.6, "label": "共犯関係"},
                 {"source": "token", "target": "wound", "kind": "embodiment", "intensity": 0.6, "label": "欠落の痕跡"},
+                {"source": "seeker", "target": "wound", "kind": "dependency", "intensity": 0.7, "gradient": -0.3, "label": "欠落への囚われ"},
             ],
         },
         "wave": wave.model_dump(mode="json"),
@@ -134,6 +136,7 @@ def _inverted_payload() -> dict[str, Any]:
             "source_kind": SourceKind.MANUAL.value,
             "tags": ["倒叙", "サスペンス", "心理戦"],
             "origin_domain": "generic",
+            "created_at": "2026-01-01T00:00:00+00:00",
             "lineage": ["倒叙型推理劇"],
         },
         "tension_graph": {
@@ -218,6 +221,7 @@ def _persuasion_payload() -> dict[str, Any]:
             "source_kind": SourceKind.MANUAL.value,
             "tags": ["論説", "常識転覆", "フレームワーク", "行動変容"],
             "origin_domain": "article",
+            "created_at": "2026-01-01T00:00:00+00:00",
             "lineage": ["問題提起型論説", "パラダイムシフト型LP"],
         },
         "tension_graph": {
