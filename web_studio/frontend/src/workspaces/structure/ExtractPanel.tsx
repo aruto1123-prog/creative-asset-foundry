@@ -20,6 +20,9 @@ const CATEGORIES = [
   { value: "narrative_archetype", label: "物語原型" },
   { value: "manga_panel_rhythm", label: "漫画演出リズム" },
   { value: "persuasion_marketing", label: "説得・マーケティング" },
+  { value: "advanced_narrative", label: "高度な物語構造" },
+  { value: "manga_direction", label: "漫画演出" },
+  { value: "emotional_wave", label: "感情波形プリセット" },
 ];
 
 const TOKEN_CATEGORY_LABELS: Record<string, string> = {

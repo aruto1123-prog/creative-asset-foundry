@@ -37,7 +37,7 @@ from core.style_alchemy.dataset_curator import DatasetCurator
 from core.style_alchemy.grid_laboratory import GridLaboratory
 from core.style_alchemy.repository import StyleLabRepository
 from web_studio.backend.jobs import JobManager
-from web_studio.backend.stores import ResearchLogStore, StoryboardStore
+from web_studio.backend.stores import DiagnosticStore, ResearchLogStore, StoryboardStore
 from web_studio.backend.ws_hub import WebSocketHub
 
 __all__ = ["FoundryServices", "deep_merge"]
@@ -72,6 +72,7 @@ class FoundryServices:
         self.article_repo = ArticleRepository(self.db)
         self.storyboards = StoryboardStore(self.db)
         self.research_logs = ResearchLogStore(self.db)
+        self.diagnostics = DiagnosticStore(self.db)
         self.llm_client: LLMClient = create_llm_client(settings.llm, self.db)
         self.harness_config = HarnessConfig.from_settings(settings.llm.harness)
         self.started_at = utc_now_iso()

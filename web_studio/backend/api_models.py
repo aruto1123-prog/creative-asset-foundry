@@ -8,9 +8,11 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from core.asset_publisher.schemas import ContentAxis, ContentPlan, ResearchLog
+from core.manga_pipeline.diagnostics_schemas import PageAnnotation
+from core.manga_pipeline.schemas import PageSide, Storyboard
 from core.structure_engine.composer import MutationType
 from core.structure_engine.schemas import EmotionalInformationWave, StructureCategory
 from core.structure_engine.transpiler import TargetDomain
@@ -42,6 +44,10 @@ __all__ = [
     "ArticleRequest",
     "TextRequest",
     "SeriesRequest",
+    "DiagnosticRunRequest",
+    "DiagnosticApplyRequest",
+    "DiagnosticDetectRequest",
+    "MAX_DIAGNOSTIC_IMAGES",
 ]
 
 Grouping = Literal["grouped", "per_block"]
@@ -252,3 +258,66 @@ class SeriesRequest(_Body):
     title: str = Field(..., min_length=1, max_length=200)
     description: str | None = None
     format: Literal["note", "obsidian"] = "obsidian"
+
+
+# -- Manga Studio: ネーム構造ドクター -----------------------------------------------
+
+MAX_DIAGNOSTIC_IMAGES = 48
+
+
+class DiagnosticRunRequest(AsyncRequest):
+    """診断の入力（storyboard_id / storyboard / annotation / images のいずれか1つ）。"""
+
+    storyboard_id: str | None = None
+    storyboard: Storyboard | None = None
+    annotation: PageAnnotation | None = None
+    images: list[str] | None = Field(None, max_length=MAX_DIAGNOSTIC_IMAGES, description="PNG の data URL または base64 文字列（読み順）")
+    first_page_side: PageSide = PageSide.RIGHT
+    target_structure_id: str | None = None
+    use_llm: bool = False
+    simulate: bool = True
+    max_prescriptions: int = Field(12, ge=1, le=50)
+    title: str | None = Field(None, max_length=200)
+
+    @model_validator(mode="after")
+    def _exactly_one_source(self) -> "DiagnosticRunRequest":
+        provided = [
+            name
+            for name, value in (
+                ("storyboard_id", self.storyboard_id),
+                ("storyboard", self.storyboard),
+                ("annotation", self.annotation),
+                ("images", self.images),
+            )
+            if value not in (None, "", [])
+        ]
+        if len(provided) != 1:
+            raise ValueError(
+                "storyboard_id / storyboard / annotation / images のいずれか1つを指定してください"
+                + (f"（指定: {', '.join(provided)}）" if provided else "")
+            )
+        return self
+
+    def source_name(self) -> str:
+        if self.storyboard_id:
+            return "storyboard_id"
+        if self.storyboard is not None:
+            return "storyboard"
+        if self.annotation is not None:
+            return "annotation"
+        return "images"
+
+
+class DiagnosticApplyRequest(_Body):
+    """処方の適用。"""
+
+    prescription_ids: list[str] = Field(..., min_length=1, max_length=50)
+    save_storyboard: bool = False
+
+
+class DiagnosticDetectRequest(_Body):
+    """原稿画像からのコマ・フキダシ検出。"""
+
+    images: list[str] = Field(..., min_length=1, max_length=MAX_DIAGNOSTIC_IMAGES)
+    first_page_side: PageSide = PageSide.RIGHT
+    title: str | None = Field(None, max_length=200)

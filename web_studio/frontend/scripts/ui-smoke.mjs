@@ -182,6 +182,41 @@ async function main() {
   await manga.getByText("ComfyUI 実行結果").waitFor({ timeout: 90000 });
   log("ComfyUI ワークフロー生成とモック ComfyUI への投入");
 
+  // ---------------- Manga Studio: ネーム構造ドクター ----------------
+  await clickButton(manga, "ドクターで診断");
+  await manga.getByText("ネーム構造ドクター（Storyboard Diagnostics Engine）").waitFor({ timeout: 20000 });
+  await clickButton(manga, "診断する", { exact: true });
+  await manga.getByText(/・ネーム・/).first().waitFor({ timeout: 120000 });
+  await manga.locator("img[alt$='ページの診断オーバーレイ']").waitFor({ timeout: 30000 });
+  await page.waitForFunction(() => {
+    const img = document.querySelector("img[alt$='ページの診断オーバーレイ']");
+    return img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0;
+  });
+  log("保存済みネームの診断（5軸レーダー・推定強度曲線・オーバーレイ）");
+  await clickButton(manga, "上位3件を選択");
+  const applyButton = manga.getByRole("button", { name: /選択した処方を適用（[1-9]/ });
+  if ((await applyButton.count()) > 0) {
+    await applyButton.first().click();
+    await manga.getByText(/処方 \d+ 件を適用/).waitFor({ timeout: 90000 });
+    log("処方の適用（適用前後スコア比較・改善版ネーム保存）");
+  } else {
+    log("自動適用可能な処方なし（処方適用はスキップ）");
+  }
+  await shot(page, "3b_storyboard_doctor");
+  await clickButton(manga, "原稿画像", { exact: true });
+  await clickButton(manga, "サンプル原稿画像で試す");
+  await manga.locator("svg[aria-label$='の検出結果']").first().waitFor({ timeout: 30000 });
+  await clickButton(manga, "コマ・フキダシを検出");
+  await manga.getByText(/\d+ コマ$/).first().waitFor({ timeout: 60000 });
+  await clickButton(manga, "診断する", { exact: true });
+  await manga.getByText(/・原稿画像・/).first().waitFor({ timeout: 120000 });
+  log("原稿画像のコマ・フキダシ検出と画像診断");
+  await clickButton(manga, "アノテーション JSON", { exact: true });
+  await clickButton(manga, "雛形を挿入");
+  await clickButton(manga, "診断する", { exact: true });
+  await manga.getByText(/・原稿アノテーション・/).first().waitFor({ timeout: 120000 });
+  log("アノテーション JSON の診断");
+
   // ---------------- Workspace 4: Asset Publisher ----------------
   await openWorkspace(page, "Asset Publisher");
   const publisher = page.locator("main > div:not([hidden])");

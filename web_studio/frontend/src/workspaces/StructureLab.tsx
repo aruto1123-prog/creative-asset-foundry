@@ -11,7 +11,15 @@ import { SearchPanel } from "./structure/SearchPanel";
 import { StructureDetail } from "./structure/StructureDetail";
 import { TranspilePanel } from "./structure/TranspilePanel";
 
-type CategoryKey = "all" | "narrative_archetype" | "manga_panel_rhythm" | "persuasion_marketing" | "custom";
+type CategoryKey =
+  | "all"
+  | "narrative_archetype"
+  | "manga_panel_rhythm"
+  | "persuasion_marketing"
+  | "advanced_narrative"
+  | "manga_direction"
+  | "emotional_wave"
+  | "custom";
 type ModeKey = "detail" | "extract" | "compose" | "transpile" | "search";
 
 const CATEGORY_TABS: Array<{ key: CategoryKey; label: string }> = [
@@ -19,6 +27,9 @@ const CATEGORY_TABS: Array<{ key: CategoryKey; label: string }> = [
   { key: "narrative_archetype", label: "物語原型" },
   { key: "manga_panel_rhythm", label: "漫画リズム" },
   { key: "persuasion_marketing", label: "説得・マーケ" },
+  { key: "advanced_narrative", label: "高度な物語構造" },
+  { key: "manga_direction", label: "漫画演出" },
+  { key: "emotional_wave", label: "感情波形" },
   { key: "custom", label: "カスタム" },
 ];
 
@@ -144,7 +155,7 @@ export function StructureLab({ dataVersion, onDataChanged }: { dataVersion: numb
     <div className="grid grid-cols-1 gap-4 p-5 xl:grid-cols-[340px_minmax(0,1fr)]">
       <Card
         title="プリセット骨格ブラウザー"
-        subtitle={`${total} 件（シード60種＋抽出・合成・変異）`}
+        subtitle={`${total} 件（シード骨格＋抽出・合成・変異）`}
         className="xl:sticky xl:top-4 xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden"
         bodyClassName="flex flex-col gap-3 xl:h-[calc(100vh-12rem)]"
       >

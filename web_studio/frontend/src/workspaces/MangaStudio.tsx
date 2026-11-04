@@ -12,8 +12,16 @@ import { useAction, useResource } from "../hooks/useAsync";
 import { useStructureOptions } from "../hooks/useStructures";
 import { parseList } from "../lib/format";
 import { ANGLE_LABELS, ARCHITECTURE_LABELS, BALLOON_LABELS, CATEGORY_LABELS, SEVERITY_TONES, SHOT_LABELS, labelOf } from "../lib/labels";
+import { StoryboardDoctor } from "./manga/StoryboardDoctor";
+import type { DoctorPreset } from "./manga/StoryboardDoctor";
 
 type PreviewMode = "single" | "spread";
+type StudioView = "studio" | "doctor";
+
+const VIEW_TABS: Array<{ key: StudioView; label: string }> = [
+  { key: "studio", label: "ネーム制作" },
+  { key: "doctor", label: "ネーム構造ドクター" },
+];
 
 const ARCHITECTURES: Array<{ value: ModelArchitecture; label: string }> = (["sdxl", "sd15", "flux", "anima"] as ModelArchitecture[]).map((value) => ({
   value,
@@ -64,6 +72,8 @@ export function MangaStudio({ dataVersion }: { dataVersion: number }) {
   const [listVersion, setListVersion] = useState(0);
   const storyboards = useResource<StoryboardSummary[]>(() => api.manga.list(), [listVersion]);
 
+  const [view, setView] = useState<StudioView>("studio");
+  const [doctorPreset, setDoctorPreset] = useState<DoctorPreset | null>(null);
   const [storyboard, setStoryboard] = useState<Storyboard | null>(null);
   const [page, setPage] = useState(0);
   const [mode, setMode] = useState<PreviewMode>("single");
@@ -231,7 +241,9 @@ export function MangaStudio({ dataVersion }: { dataVersion: number }) {
         <h1 className="text-xl font-semibold text-ink-100">Manga Studio</h1>
         <p className="text-xs text-ink-400">構造の感情曲線・情報開示曲線・ビートから、ページ割り→コマ割り→カメラ→セリフを展開し、漫画文法を監査して ComfyUI へ</p>
       </div>
+      <Tabs tabs={VIEW_TABS} active={view} onChange={setView} />
 
+      <div className={cx("flex flex-col gap-4", view !== "studio" && "hidden")}>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Card title="ネーム生成" subtitle="右ページ開始・左ページ終端の見開き慣行で、転換点をめくり直後へ配置します">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -303,6 +315,15 @@ export function MangaStudio({ dataVersion }: { dataVersion: number }) {
                 </Button>
                 <Button size="sm" onClick={() => downloadJson(`${storyboard.id}.json`, storyboard)}>
                   ネーム JSON
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setDoctorPreset({ storyboardId: storyboard.id, nonce: Date.now() });
+                    setView("doctor");
+                  }}
+                >
+                  ドクターで診断
                 </Button>
                 <Button
                   size="sm"
@@ -544,6 +565,10 @@ export function MangaStudio({ dataVersion }: { dataVersion: number }) {
         </>
       )}
       {structures.error && <ErrorNote message={errorMessage(structures.error)} />}
+      </div>
+      <div className={cx(view !== "doctor" && "hidden")}>
+        <StoryboardDoctor dataVersion={dataVersion} preset={doctorPreset} onStoryboardSaved={() => setListVersion((value) => value + 1)} />
+      </div>
     </div>
   );
 }

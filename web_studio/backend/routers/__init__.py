@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from web_studio.backend.routers import jobs, manga, publisher, structures, style, system
+from web_studio.backend.routers import diagnostics, jobs, manga, publisher, structures, style, system
 
 ALL_ROUTERS = (
     system.router,
@@ -10,6 +10,7 @@ ALL_ROUTERS = (
     structures.router,
     style.router,
     manga.router,
+    diagnostics.router,
     publisher.router,
 )
 

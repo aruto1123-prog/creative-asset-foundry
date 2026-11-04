@@ -108,6 +108,9 @@ export const CATEGORY_LABELS: Record<string, string> = {
   narrative_archetype: "物語原型",
   manga_panel_rhythm: "漫画演出リズム",
   persuasion_marketing: "説得・マーケティング",
+  advanced_narrative: "高度な物語構造",
+  manga_direction: "漫画演出",
+  emotional_wave: "感情波形プリセット",
   custom: "カスタム",
 };
 
@@ -187,6 +190,80 @@ export const SEVERITY_TONES: Record<string, "danger" | "warning" | "info" | "neu
   medium: "warning",
   info: "info",
   low: "info",
+};
+
+// ---------------------------------------------------------------------------
+// ネーム構造ドクター
+// ---------------------------------------------------------------------------
+
+export const DIAGNOSTIC_AXIS_LABELS: Record<string, string> = {
+  gaze_flow: "視線誘導",
+  emotional_dynamics: "感情の緩急",
+  information_density: "情報密度",
+  panel_rhythm: "コマ割りリズム",
+  page_turn: "めくり効果",
+};
+
+export const DIAGNOSTIC_AXIS_ORDER = ["gaze_flow", "emotional_dynamics", "information_density", "panel_rhythm", "page_turn"] as const;
+
+export const DIAGNOSTIC_AXIS_COLORS: Record<string, string> = {
+  gaze_flow: "#38bdf8",
+  emotional_dynamics: "#f472b6",
+  information_density: "#fbbf24",
+  panel_rhythm: "#a78bfa",
+  page_turn: "#34d399",
+};
+
+export const DIAGNOSTIC_SEVERITY_LABELS: Record<string, string> = {
+  critical: "致命的",
+  major: "重要",
+  minor: "軽微",
+  info: "参考",
+};
+
+export const DIAGNOSTIC_SEVERITY_TONES: Record<string, "danger" | "warning" | "info" | "neutral"> = {
+  critical: "danger",
+  major: "warning",
+  minor: "info",
+  info: "neutral",
+};
+
+export const DIAGNOSTIC_SEVERITY_ORDER: Record<string, number> = { critical: 0, major: 1, minor: 2, info: 3 };
+
+export const PRESCRIPTION_LABELS: Record<string, string> = {
+  enlarge_panel: "山場のコマを拡大",
+  convert_to_splash: "1ページ大ゴマ化",
+  move_peak_to_reveal: "山場をめくり直後へ移動",
+  strengthen_hook: "めくり前の引きを強化",
+  insert_pause: "山場直前に「間」を挿入",
+  vary_shot: "ショット・アングルの単調さを打破",
+  split_balloon: "長台詞のフキダシを分割",
+  move_balloon: "フキダシの読み順を是正",
+  reorder_panels: "コマの段組みを組み直す",
+  rebalance_density: "情報密度を隣接ページへ分散",
+  add_contrast: "コマ面積に大小の緩急をつける",
+  add_slant: "斜めガターで動勢を加える",
+};
+
+export const DIAGNOSTIC_SOURCE_LABELS: Record<string, string> = {
+  storyboard: "ネーム",
+  annotation: "原稿アノテーション",
+  image: "原稿画像",
+};
+
+export const DENSITY_LEVEL_LABELS: Record<string, string> = {
+  sparse: "疎",
+  balanced: "適正",
+  dense: "密",
+  overloaded: "過密",
+};
+
+export const GRADE_COLORS: Record<string, string> = {
+  S: "#34d399",
+  A: "#7c9cff",
+  B: "#38bdf8",
+  C: "#fbbf24",
+  D: "#fb7185",
 };
 
 export function labelOf(map: Record<string, string>, key: string | null | undefined): string {

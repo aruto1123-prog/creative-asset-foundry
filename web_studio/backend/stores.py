@@ -10,10 +10,11 @@ from pydantic import BaseModel
 from core.asset_publisher.schemas import ResearchLog
 from core.common import utc_now_iso
 from core.db import Database
+from core.manga_pipeline.diagnostics_schemas import DiagnosticReport
 from core.manga_pipeline.schemas import Storyboard
 from core.manga_pipeline.storyboard_generator import StoryboardConfig
 
-__all__ = ["StoryboardSummary", "StoryboardStore", "ResearchLogStore"]
+__all__ = ["StoryboardSummary", "StoryboardStore", "ResearchLogStore", "DiagnosticSummary", "DiagnosticStore"]
 
 STORE_DDL = """
 CREATE TABLE IF NOT EXISTS backend_storyboards (
@@ -148,3 +149,118 @@ class ResearchLogStore:
     def raw(self, key: str) -> dict[str, Any] | None:
         row = self.db.query_one("SELECT log_json FROM backend_research_logs WHERE key = ?", (key,))
         return json.loads(row["log_json"]) if row else None
+
+
+DIAGNOSTICS_DDL = """
+CREATE TABLE IF NOT EXISTS backend_diagnostics (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    source_type TEXT NOT NULL,
+    source_id TEXT,
+    target_structure_id TEXT,
+    overall_score REAL NOT NULL,
+    grade TEXT NOT NULL,
+    page_count INTEGER NOT NULL,
+    findings INTEGER NOT NULL,
+    prescriptions INTEGER NOT NULL,
+    data_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_backend_diagnostics_created ON backend_diagnostics(created_at);
+CREATE INDEX IF NOT EXISTS idx_backend_diagnostics_source ON backend_diagnostics(source_id);
+"""
+
+
+class DiagnosticSummary(BaseModel):
+    """診断履歴一覧の1行。"""
+
+    id: str
+    title: str
+    source_type: str
+    source_id: str | None = None
+    target_structure_id: str | None = None
+    overall_score: float
+    grade: str
+    page_count: int
+    findings: int
+    prescriptions: int
+    created_at: str
+
+
+class DiagnosticStore:
+    """ネーム構造ドクターの診断レポート（DiagnosticReport）の保存。"""
+
+    def __init__(self, db: Database) -> None:
+        self.db = db
+        db.ensure_schema("web_studio.diagnostics", DIAGNOSTICS_DDL)
+
+    @staticmethod
+    def _page_count(report: DiagnosticReport) -> int:
+        if report.storyboard is not None:
+            return report.storyboard.page_count
+        return len(report.pages)
+
+    def save(self, report: DiagnosticReport) -> str:
+        self.db.execute(
+            "INSERT INTO backend_diagnostics(id, title, source_type, source_id, target_structure_id, overall_score, grade, "
+            "page_count, findings, prescriptions, data_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET title=excluded.title, source_type=excluded.source_type, source_id=excluded.source_id, "
+            "target_structure_id=excluded.target_structure_id, overall_score=excluded.overall_score, grade=excluded.grade, "
+            "page_count=excluded.page_count, findings=excluded.findings, prescriptions=excluded.prescriptions, data_json=excluded.data_json",
+            (
+                report.id,
+                report.title,
+                report.source_type.value,
+                report.source_id,
+                report.target_structure_id,
+                float(report.overall_score),
+                report.grade,
+                self._page_count(report),
+                len(report.findings),
+                len(report.prescriptions),
+                report.model_dump_json(),
+                report.created_at or utc_now_iso(),
+            ),
+        )
+        return report.id
+
+    def get(self, report_id: str) -> DiagnosticReport | None:
+        row = self.db.query_one("SELECT data_json FROM backend_diagnostics WHERE id = ?", (report_id,))
+        return DiagnosticReport.model_validate_json(row["data_json"]) if row else None
+
+    def exists(self, report_id: str) -> bool:
+        return self.db.query_one("SELECT 1 AS hit FROM backend_diagnostics WHERE id = ?", (report_id,)) is not None
+
+    def list(self, limit: int = 100, offset: int = 0, source_id: str | None = None) -> list[DiagnosticSummary]:
+        clauses = ""
+        params: list[Any] = []
+        if source_id:
+            clauses = "WHERE source_id = ?"
+            params.append(source_id)
+        rows = self.db.query(
+            "SELECT id, title, source_type, source_id, target_structure_id, overall_score, grade, page_count, findings, prescriptions, created_at "
+            f"FROM backend_diagnostics {clauses} ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?",
+            (*params, max(1, int(limit)), max(0, int(offset))),
+        )
+        return [
+            DiagnosticSummary(
+                id=row["id"],
+                title=row["title"],
+                source_type=row["source_type"],
+                source_id=row["source_id"],
+                target_structure_id=row["target_structure_id"],
+                overall_score=float(row["overall_score"]),
+                grade=row["grade"],
+                page_count=int(row["page_count"]),
+                findings=int(row["findings"]),
+                prescriptions=int(row["prescriptions"]),
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
+    def delete(self, report_id: str) -> bool:
+        return self.db.execute("DELETE FROM backend_diagnostics WHERE id = ?", (report_id,)).rowcount > 0
+
+    def count(self) -> int:
+        return int(self.db.scalar("SELECT COUNT(*) FROM backend_diagnostics") or 0)
