@@ -27,6 +27,7 @@ python run_studio.py
 - [PROGRESS.md](PROGRESS.md) — 構築進捗
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — アーキテクチャ設計書
 - [docs/MASTER_GUIDE.md](docs/MASTER_GUIDE.md) — 数理解説・接続手順・運用ワークフロー
+- [docs/LOCAL_SETUP_WITH_CLAUDE_CODE.md](docs/LOCAL_SETUP_WITH_CLAUDE_CODE.md) — ローカルPCで Claude Code に初期設定〜実用まで実行させる導入指示書（補助ツール `local_tools/` 付き）
 
 ## 主な構成
 
